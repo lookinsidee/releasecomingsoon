@@ -397,50 +397,47 @@ async function initDashboard() {
 // ── FETCH FROM SUPABASE ───────────────────────────────────────
 async function fetchLogs() {
   setDbStatus('loading', 'Fetching visits from Supabase…');
-  const { data, error } = await supabase
-    .from(TABLE_NAME)
-    .select('*')
-    .order('visited_at', { ascending: false })
-    .limit(1000);
-
-  if (error) {
-    console.error('[admin] fetch error:', error);
-    setDbStatus('fail', 'Failed to connect: ' + (error.message || 'Unknown error'));
-    return;
+  try {
+    const resp = await fetch(
+      SUPABASE_URL + '/rest/v1/' + TABLE_NAME + '?order=visited_at.desc&limit=1000',
+      { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY } }
+    );
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    setDbStatus('ok', `Connected · ${data.length} rows loaded`);
+    allLogs = data;
+    updateStats();
+    applyFilter();
+  } catch(err) {
+    console.error('[admin] fetch error:', err);
+    setDbStatus('fail', 'Failed to connect: ' + err.message);
   }
-
-  setDbStatus('ok', `Connected · ${data.length} rows loaded`);
-  allLogs = data || [];
-  updateStats();
-  applyFilter();
 }
 
-// ── REALTIME SUBSCRIPTION ─────────────────────────────────────
+// ── POLLING (replaces realtime SDK) ──────────────────────────
 function subscribeRealtime() {
-  const channel = supabase
-    .channel('visits-live')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: TABLE_NAME },
-      payload => {
-        allLogs.unshift(payload.new);  // prepend newest
+  const dot   = document.getElementById('rt-dot');
+  const label = document.getElementById('rt-label');
+  dot.classList.add('live');
+  label.textContent = 'LIVE';
+  // Poll every 10 seconds for new rows
+  setInterval(async () => {
+    try {
+      const resp = await fetch(
+        SUPABASE_URL + '/rest/v1/' + TABLE_NAME + '?order=visited_at.desc&limit=1000',
+        { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY } }
+      );
+      if (!resp.ok) return;
+      const data = await resp.json();
+      if (data.length !== allLogs.length) {
+        const prevCount = allLogs.length;
+        allLogs = data;
         updateStats();
-        applyFilter(true); // true = highlight new row
-        toast(`🟢 New visit: ${payload.new.ip || 'unknown'} · ${payload.new.city || '?'}, ${payload.new.country || '?'}`);
+        applyFilter(data.length > prevCount);
+        if (data.length > prevCount) toast('🟢 New visit detected!');
       }
-    )
-    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: TABLE_NAME },
-      () => fetchLogs()
-    )
-    .subscribe(status => {
-      const dot   = document.getElementById('rt-dot');
-      const label = document.getElementById('rt-label');
-      if (status === 'SUBSCRIBED') {
-        dot.classList.add('live');
-        label.textContent = 'LIVE';
-      } else {
-        dot.classList.remove('live');
-        label.textContent = status.toUpperCase();
-      }
-    });
+    } catch(e) {}
+  }, 10000);
 }
 
 // ── DB STATUS INDICATOR ───────────────────────────────────────
@@ -595,9 +592,12 @@ function exportCSV() {
 // ── CLEAR ALL ─────────────────────────────────────────────────
 async function clearLogs() {
   if (!confirm('Delete ALL visit records from Supabase? This cannot be undone.')) return;
-  const { error } = await db.from(TABLE_NAME).delete().neq('id', 0);
-  if (error) {
-    alert('Error clearing logs: ' + error.message);
+  const resp = await fetch(SUPABASE_URL + '/rest/v1/' + TABLE_NAME + '?id=gte.0', {
+    method: 'DELETE',
+    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY }
+  });
+  if (!resp.ok) {
+    alert('Error clearing logs: HTTP ' + resp.status);
     return;
   }
   allLogs = [];
