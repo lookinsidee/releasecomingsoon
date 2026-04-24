@@ -238,7 +238,7 @@
 //  ⚙️  CONFIGURATION — replace with your values
 // ══════════════════════════════════════════════════════════════
 const SUPABASE_URL      = 'https://adxujurerxlrebawarav.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_FWnX3zP0W7_Es-G8_DOjEA_R1DX94ug';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkeHVqdXJlcnhscmViYXdhcmF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNTU3MjgsImV4cCI6MjA5MjYzMTcyOH0.SeAAFJ6N1qytZDrSMj-ue4J5YU5zPfzpyujDJeHFPJ4';
 const TABLE_NAME        = 'visits';                  // the table you created (see SQL below)
 // ══════════════════════════════════════════════════════════════
 
@@ -263,9 +263,9 @@ function handleNotify() {
 
 // ── ANALYTICS TRACKER ─────────────────────────────────────────
 (async function track() {
-  const statusEl  = document.getElementById('tracker-status');
-  const dotEl     = document.getElementById('tracker-dot');
-  const labelEl   = document.getElementById('tracker-label');
+  const statusEl = document.getElementById('tracker-status');
+  const dotEl    = document.getElementById('tracker-dot');
+  const labelEl  = document.getElementById('tracker-label');
 
   function showStatus(state, text) {
     statusEl.classList.add('visible');
@@ -291,7 +291,29 @@ function handleNotify() {
     return 'Unknown';
   }
 
+  // Fetch geo/IP data from ipapi.co (free, no key needed, 1k/day)
+  let geo = {};
+  try {
+    const geoResp = await fetch('https://ipapi.co/json/');
+    if (geoResp.ok) {
+      const g = await geoResp.json();
+      geo = {
+        ip:        g.ip        || null,
+        city:      g.city      || null,
+        region:    g.region    || null,
+        country:   g.country_name || null,
+        org:       g.org       || null,
+        timezone:  g.timezone  || null,
+        postal:    g.postal    || null,
+        asn:       g.asn       || null,
+        latitude:  g.latitude  || null,
+        longitude: g.longitude || null,
+      };
+    }
+  } catch (_) { /* geo lookup failed silently — still log the visit */ }
+
   const payload = {
+    ...geo,
     browser:    getBrowser(),
     platform:   getPlatform(),
     user_agent: ua.substring(0, 300),
