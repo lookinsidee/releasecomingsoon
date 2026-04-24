@@ -18,16 +18,12 @@
     overflow: hidden;
     color: #fff;
   }
-
-  /* animated grain overlay */
   body::before {
     content: '';
     position: fixed; inset: 0;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
     pointer-events: none; z-index: 0; opacity: 0.4;
   }
-
-  /* radial glow */
   body::after {
     content: '';
     position: fixed;
@@ -37,8 +33,6 @@
     background: radial-gradient(circle, rgba(255,60,80,0.08) 0%, transparent 70%);
     pointer-events: none; z-index: 0;
   }
-
-  /* MAIN CONTENT */
   .wrap {
     position: relative; z-index: 1;
     text-align: center;
@@ -46,7 +40,6 @@
     max-width: 600px;
     width: 100%;
   }
-
   .eyebrow {
     font-size: 11px;
     letter-spacing: 0.3em;
@@ -56,7 +49,6 @@
     opacity: 0;
     animation: fadeUp 0.8s 0.3s forwards;
   }
-
   .headline {
     font-family: 'Bebas Neue', sans-serif;
     font-size: clamp(52px, 12vw, 96px);
@@ -68,8 +60,6 @@
     animation: fadeUp 0.8s 0.5s forwards;
   }
   .headline span { color: #ff3c50; }
-
-  /* COUNTDOWN */
   .countdown {
     display: flex;
     gap: 20px;
@@ -103,8 +93,6 @@
     align-self: flex-start;
     padding-top: 12px;
   }
-
-  /* FORM */
   .notify-form {
     display: flex;
     gap: 10px;
@@ -142,7 +130,6 @@
   }
   .notify-btn:hover { background: #ff5566; transform: translateY(-1px); }
   .notify-btn:active { transform: scale(0.97); }
-
   .footer-note {
     font-size: 12px;
     color: rgba(255,255,255,0.18);
@@ -150,8 +137,6 @@
     opacity: 0;
     animation: fadeUp 0.8s 1.1s forwards;
   }
-
-  /* PROGRESS BAR */
   .progress-wrap {
     width: 100%;
     max-width: 320px;
@@ -162,8 +147,6 @@
   .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: rgba(255,255,255,0.25); letter-spacing: 0.08em; margin-bottom: 8px; }
   .progress-track { height: 2px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; }
   .progress-fill { height: 100%; background: #ff3c50; border-radius: 2px; transition: width 1s ease; width: 0%; }
-
-  /* TRACKER STATUS (subtle, top-right) */
   .tracker-status {
     position: fixed;
     top: 14px; right: 16px;
@@ -178,15 +161,9 @@
     transition: opacity 0.4s;
   }
   .tracker-status.visible { opacity: 1; }
-  .tracker-dot {
-    width: 5px; height: 5px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.2);
-    transition: background 0.3s;
-  }
+  .tracker-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.2); transition: background 0.3s; }
   .tracker-dot.ok   { background: #00e5a0; }
   .tracker-dot.fail { background: #ff4d4d; }
-
   @keyframes fadeUp {
     from { opacity:0; transform: translateY(16px); }
     to   { opacity:1; transform: translateY(0); }
@@ -195,13 +172,11 @@
 </head>
 <body>
 
-<!-- subtle tracker status indicator (top-right) -->
 <div class="tracker-status" id="tracker-status">
   <div class="tracker-dot" id="tracker-dot"></div>
   <span id="tracker-label">ANALYTICS</span>
 </div>
 
-<!-- MAIN CONTENT -->
 <div class="wrap">
   <div class="eyebrow">Something is coming</div>
   <div class="headline">COMING<br><span>SOON</span></div>
@@ -223,50 +198,52 @@
 
   <div class="notify-form">
     <input class="notify-input" type="email" placeholder="Enter your email for updates" id="email-input" />
-    <button class="notify-btn" id="notify-btn" onclick="handleNotify()">Notify Me</button>
+    <button class="notify-btn" id="notify-btn">Notify Me</button>
   </div>
 
   <div class="footer-note">We'll let you know the moment we launch.</div>
 </div>
 
-
-<!-- Supabase JS SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <script>
-// ══════════════════════════════════════════════════════════════
-//  ⚙️  CONFIGURATION — replace with your values
-// ══════════════════════════════════════════════════════════════
 const SUPABASE_URL      = 'https://adxujurerxlrebawarav.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkeHVqdXJlcnhscmViYXdhcmF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNTU3MjgsImV4cCI6MjA5MjYzMTcyOH0.SeAAFJ6N1qytZDrSMj-ue4J5YU5zPfzpyujDJeHFPJ4';
-const TABLE_NAME        = 'visits';                  // the table you created (see SQL below)
-// ══════════════════════════════════════════════════════════════
 
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-
-// ── NOTIFY BUTTON ─────────────────────────────────────────────
-function handleNotify() {
-  const btn = document.getElementById('notify-btn');
+// ── NOTIFY BUTTON — saves email to Supabase ───────────────────
+document.getElementById('notify-btn').addEventListener('click', async function() {
+  const btn   = this;
   const email = document.getElementById('email-input').value.trim();
-  if (email && email.includes('@')) {
-    btn.textContent = 'Noted ✓';
-    btn.style.background = '#00e5a0';
-    btn.style.color = '#060608';
-    btn.disabled = true;
-  } else {
+  if (!email || !email.includes('@')) {
     btn.textContent = 'Enter a valid email';
     btn.style.background = '#ff4d4d';
     setTimeout(() => { btn.textContent = 'Notify Me'; btn.style.background = '#ff3c50'; }, 2000);
+    return;
   }
-}
+  btn.textContent = 'Saving…';
+  btn.disabled = true;
+  try {
+    await fetch(SUPABASE_URL + '/rest/v1/emails', {
+      method: 'POST',
+      headers: {
+        'apikey':        SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        'Content-Type':  'application/json',
+        'Prefer':        'return=minimal',
+      },
+      body: JSON.stringify({ email }),
+    });
+  } catch(_) {}
+  // Always show success to visitor
+  btn.textContent = 'Noted ✓';
+  btn.style.background = '#00e5a0';
+  btn.style.color = '#060608';
+});
 
 // ── ANALYTICS TRACKER ─────────────────────────────────────────
-// Geo lookup happens server-side via Netlify function — works in all browsers including Brave
 (async function track() {
-  const statusEl = document.getElementById('tracker-status');
-  const dotEl    = document.getElementById('tracker-dot');
-  const labelEl  = document.getElementById('tracker-label');
+  const statusEl  = document.getElementById('tracker-status');
+  const dotEl     = document.getElementById('tracker-dot');
+  const labelEl   = document.getElementById('tracker-label');
+  const visitStart = Date.now();
 
   function showStatus(state, text) {
     statusEl.classList.add('visible');
@@ -292,32 +269,90 @@ function handleNotify() {
     return 'Unknown';
   }
 
+  // Battery API (not available in all browsers)
+  let battery_pct = null, battery_charging = null;
   try {
+    const bat        = await navigator.getBattery();
+    battery_pct      = Math.round(bat.level * 100);
+    battery_charging = bat.charging;
+  } catch(_) {}
+
+  const payload = {
+    browser:          getBrowser(),
+    platform:         getPlatform(),
+    user_agent:       ua.substring(0, 300),
+    visited_at:       new Date().toISOString(),
+    referrer:         document.referrer || null,
+    page_url:         window.location.href,
+    screen_res:       screen.width + 'x' + screen.height,
+    timezone:         Intl.DateTimeFormat().resolvedOptions().timeZone || null,
+    language:         navigator.language || null,
+    color_scheme:     window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+    touch_screen:     navigator.maxTouchPoints > 0,
+    connection:       navigator.connection?.effectiveType || null,
+    battery_pct,
+    battery_charging,
+    orientation:      screen.orientation?.type || (window.innerWidth > window.innerHeight ? 'landscape' : 'portrait'),
+    do_not_track:     navigator.doNotTrack === '1' || navigator.doNotTrack === 'yes',
+    cpu_cores:        navigator.hardwareConcurrency || null,
+    device_memory:    navigator.deviceMemory || null,
+  };
+
+  let rowId = null;
+
+  try {
+    // Try Netlify serverside function first (gets real IP + geo)
     const resp = await fetch('/api/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        browser:    getBrowser(),
-        platform:   getPlatform(),
-        user_agent: ua.substring(0, 300),
-        referrer:   document.referrer || null,
-        page_url:   window.location.href,
-      }),
+      body: JSON.stringify(payload),
     });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    rowId = data.id || null;
     showStatus('ok', 'ANALYTICS ✓');
-  } catch (err) {
-    console.warn('[analytics] Failed to log visit:', err.message || err);
-    showStatus('fail', 'ANALYTICS ✗');
+  } catch(_) {
+    // Fallback: log directly to Supabase (no geo, but visit is recorded)
+    try {
+      const resp = await fetch(SUPABASE_URL + '/rest/v1/visits', {
+        method: 'POST',
+        headers: {
+          'apikey':        SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          'Content-Type':  'application/json',
+          'Prefer':        'return=representation',
+        },
+        body: JSON.stringify(payload),
+      });
+      if (resp.ok) {
+        const [row] = await resp.json();
+        rowId = row?.id || null;
+        showStatus('ok', 'ANALYTICS ✓');
+      } else {
+        throw new Error('HTTP ' + resp.status);
+      }
+    } catch(e) {
+      console.warn('[analytics] Failed to log visit:', e.message);
+      showStatus('fail', 'ANALYTICS ✗');
+    }
+  }
+
+  // Track time on page — fires when visitor closes/navigates away
+  if (rowId) {
+    window.addEventListener('beforeunload', () => {
+      const seconds = Math.round((Date.now() - visitStart) / 1000);
+      navigator.sendBeacon(
+        SUPABASE_URL + '/rest/v1/visits?id=eq.' + rowId,
+        new Blob([JSON.stringify({ time_on_page: seconds })], { type: 'application/json' })
+      );
+    });
   }
 })();
 
 // ── COUNTDOWN ─────────────────────────────────────────────────
 const target  = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 const totalMs = 30 * 24 * 60 * 60 * 1000;
-
 function pad(n) { return String(n).padStart(2, '0'); }
-
 function tick() {
   const diff  = Math.max(0, target - Date.now());
   const days  = Math.floor(diff / 86400000);
@@ -325,7 +360,6 @@ function tick() {
   const mins  = Math.floor((diff % 3600000) / 60000);
   const secs  = Math.floor((diff % 60000) / 1000);
   const vals  = [pad(days), pad(hours), pad(mins), pad(secs)];
-
   ['cd-days','cd-hours','cd-mins','cd-secs'].forEach((id, i) => {
     const el = document.getElementById(id);
     if (el.textContent !== vals[i]) {
@@ -334,7 +368,6 @@ function tick() {
       setTimeout(() => el.classList.remove('tick'), 150);
     }
   });
-
   const pct = Math.round(((totalMs - diff) / totalMs) * 100);
   document.getElementById('pct').textContent = pct + '%';
   document.getElementById('progress-fill').style.width = pct + '%';
