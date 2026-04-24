@@ -291,51 +291,27 @@ function handleNotify() {
     return 'Unknown';
   }
 
-  // Fetch geo/IP data — tries two providers for reliability
+  // Fetch geo/IP data via ipinfo.io (HTTPS, free, no key for basic fields)
   let geo = {};
   try {
-    // Primary: ip-api.com (free, CORS-friendly)
-    const geoResp = await fetch('https://ip-api.com/json/?fields=status,country,regionName,city,zip,lat,lon,timezone,org,isp,as,query');
+    const geoResp = await fetch('https://ipinfo.io/json');
     if (geoResp.ok) {
       const g = await geoResp.json();
-      if (g.status === 'success') {
-        geo = {
-          ip:        g.query      || null,
-          city:      g.city       || null,
-          region:    g.regionName || null,
-          country:   g.country    || null,
-          org:       g.org || g.isp || null,
-          timezone:  g.timezone   || null,
-          postal:    g.zip        || null,
-          asn:       g.as         || null,
-          latitude:  g.lat        || null,
-          longitude: g.lon        || null,
-        };
-      }
+      const [lat, lon] = (g.loc || ',').split(',');
+      geo = {
+        ip:        g.ip       || null,
+        city:      g.city     || null,
+        region:    g.region   || null,
+        country:   g.country  || null,
+        org:       g.org      || null,
+        timezone:  g.timezone || null,
+        postal:    g.postal   || null,
+        asn:       g.org ? g.org.split(' ')[0] : null,
+        latitude:  lat ? parseFloat(lat) : null,
+        longitude: lon ? parseFloat(lon) : null,
+      };
     }
-  } catch (_) {
-    try {
-      // Fallback: ipwho.is
-      const r2 = await fetch('https://ipwho.is/');
-      if (r2.ok) {
-        const g = await r2.json();
-        if (g.success) {
-          geo = {
-            ip:        g.ip                       || null,
-            city:      g.city                     || null,
-            region:    g.region                   || null,
-            country:   g.country                  || null,
-            org:       g.connection?.org          || null,
-            timezone:  g.timezone?.id             || null,
-            postal:    g.postal                   || null,
-            asn:       g.connection?.asn ? 'AS' + g.connection.asn : null,
-            latitude:  g.latitude                 || null,
-            longitude: g.longitude                || null,
-          };
-        }
-      }
-    } catch (_) { /* both failed — visit still logged without geo */ }
-  }
+  } catch (_) { /* geo failed — visit still logged without location */ }
 
   const payload = {
     ...geo,
