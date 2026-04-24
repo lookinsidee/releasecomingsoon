@@ -274,13 +274,12 @@ function handleNotify() {
     if (state === 'ok') setTimeout(() => statusEl.classList.remove('visible'), 3000);
   }
 
-  // 1. Log immediately with no geo — visit is never lost
   const ua = navigator.userAgent;
   function getBrowser() {
-    if (/Edg/i.test(ua))    return 'Edge';
-    if (/Chrome/i.test(ua)) return 'Chrome';
-    if (/Firefox/i.test(ua))return 'Firefox';
-    if (/Safari/i.test(ua)) return 'Safari';
+    if (/Edg/i.test(ua))     return 'Edge';
+    if (/Chrome/i.test(ua))  return 'Chrome';
+    if (/Firefox/i.test(ua)) return 'Firefox';
+    if (/Safari/i.test(ua))  return 'Safari';
     return 'Unknown';
   }
   function getPlatform() {
@@ -301,57 +300,19 @@ function handleNotify() {
     page_url:   window.location.href,
   };
 
-  const REST = SUPABASE_URL + '/rest/v1/' + TABLE_NAME;
-  const HEADERS = {
-    'apikey': SUPABASE_ANON_KEY,
-    'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-    'Content-Type': 'application/json',
-    'Prefer': 'return=representation',
-  };
-
   try {
-    // 1. Insert immediately — visit is never lost
-    const insertResp = await fetch(REST, {
+    const resp = await fetch(SUPABASE_URL + '/rest/v1/' + TABLE_NAME, {
       method: 'POST',
-      headers: HEADERS,
+      headers: {
+        'apikey':        SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        'Content-Type':  'application/json',
+        'Prefer':        'return=minimal',
+      },
       body: JSON.stringify(payload),
     });
-    if (!insertResp.ok) throw new Error('Insert failed: ' + insertResp.status);
-    const [inserted] = await insertResp.json();
-    const rowId = inserted.id;
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
     showStatus('ok', 'ANALYTICS ✓');
-
-    // 2. Enrich with geo in the background
-    const geoProviders = [
-      () => fetch('https://ipapi.co/json/').then(r => r.json()).then(d => ({
-        ip: d.ip, city: d.city, region: d.region, country: d.country_name,
-        org: d.org, timezone: d.timezone, postal: d.postal, asn: d.asn,
-        latitude: d.latitude, longitude: d.longitude,
-      })),
-      () => fetch('https://ip-api.com/json/?fields=query,city,regionName,country,org,timezone,zip,lat,lon').then(r => r.json()).then(d => ({
-        ip: d.query, city: d.city, region: d.regionName, country: d.country,
-        org: d.org, timezone: d.timezone, postal: d.zip,
-        latitude: d.lat, longitude: d.lon,
-      })),
-      () => fetch('https://freeipapi.com/api/json').then(r => r.json()).then(d => ({
-        ip: d.ipAddress, city: d.cityName, region: d.regionName, country: d.countryName,
-        timezone: d.timeZone, postal: d.zipCode,
-        latitude: d.latitude, longitude: d.longitude,
-      })),
-    ];
-
-    for (const fn of geoProviders) {
-      try {
-        const geo = await fn();
-        await fetch(REST + '?id=eq.' + rowId, {
-          method: 'PATCH',
-          headers: { ...HEADERS, 'Prefer': 'return=minimal' },
-          body: JSON.stringify(geo),
-        });
-        break;
-      } catch(e) { /* try next */ }
-    }
-
   } catch (err) {
     console.warn('[analytics] Failed to log visit:', err.message || err);
     showStatus('fail', 'ANALYTICS ✗');
