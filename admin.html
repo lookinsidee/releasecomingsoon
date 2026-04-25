@@ -38,85 +38,142 @@
   }
   @keyframes scan { 0%,100%{opacity:0.4} 50%{opacity:1} }
 
-  /* LOCK */
+  /* ── LOCK SCREEN ─────────────────────────────────────── */
   #lock-screen {
-    position: fixed; inset: 0; background: var(--bg);
-    z-index: 500; display: flex; align-items: center; justify-content: center;
+    position: fixed; inset: 0;
+    background: var(--bg);
+    z-index: 500;
+    display: flex; align-items: center; justify-content: center;
   }
   .lock-box {
-    background: var(--surface); border: 1px solid rgba(0,229,160,0.2);
-    border-radius: 16px; padding: 36px 40px; width: 100%; max-width: 360px; text-align: center;
+    background: var(--surface);
+    border: 1px solid rgba(0,229,160,0.2);
+    border-radius: 16px;
+    padding: 36px 40px;
+    width: 100%; max-width: 380px;
+    text-align: center;
   }
   .lock-icon { font-size: 28px; margin-bottom: 16px; }
   .lock-title { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--accent); letter-spacing: 0.1em; margin-bottom: 8px; }
   .lock-sub { font-size: 13px; color: var(--muted2); margin-bottom: 24px; }
+  .lock-field-label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; text-align: left; margin-bottom: 5px; }
   .lock-input {
-    width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px;
-    padding: 12px 16px; color: var(--text); font-family: var(--mono); font-size: 14px; outline: none;
-    margin-bottom: 12px; transition: border-color 0.2s; text-align: center; letter-spacing: 0.1em;
+    width: 100%; background: var(--surface2);
+    border: 1px solid var(--border2); border-radius: 8px;
+    padding: 12px 16px; color: var(--text);
+    font-family: var(--mono); font-size: 13px; outline: none;
+    margin-bottom: 14px; transition: border-color 0.2s;
+    letter-spacing: 0.04em;
   }
   .lock-input:focus { border-color: rgba(0,229,160,0.4); }
   .lock-btn {
-    width: 100%; padding: 12px; background: var(--accent); color: #080b10;
-    border: none; border-radius: 8px; font-family: var(--mono); font-size: 12px; font-weight: 700;
+    width: 100%; padding: 13px;
+    background: var(--accent); color: #080b10;
+    border: none; border-radius: 8px;
+    font-family: var(--mono); font-size: 12px; font-weight: 700;
     letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s;
+    margin-top: 4px;
   }
   .lock-btn:hover { background: #00ffb3; }
-  .lock-error { font-size: 12px; color: var(--danger); margin-top: 10px; display: none; font-family: var(--mono); }
+  .lock-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .lock-error { font-size: 12px; color: var(--danger); margin-top: 12px; display: none; font-family: var(--mono); min-height: 18px; }
+  .lock-loading { font-size: 12px; color: var(--muted2); margin-top: 12px; display: none; font-family: var(--mono); }
+  .lock-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+  .lock-footer { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.06em; }
+  .lock-footer span { color: var(--accent2); }
 
-  /* LAYOUT */
+  /* ── MAIN LAYOUT ─────────────────────────────────────── */
   .container { max-width: 1140px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
-  nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; border-bottom: 1px solid var(--border); }
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 0; border-bottom: 1px solid var(--border);
+  }
   .logo { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--accent); letter-spacing: 0.12em; display: flex; align-items: center; gap: 8px; }
   .logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: blink 1.2s ease-in-out infinite; }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
   .nav-right { display: flex; align-items: center; gap: 10px; }
   .admin-badge { font-family: var(--mono); font-size: 10px; padding: 4px 10px; border-radius: 4px; background: rgba(0,229,160,0.1); color: var(--accent); border: 1px solid rgba(0,229,160,0.2); }
-  .realtime-badge { font-family: var(--mono); font-size: 10px; padding: 4px 10px; border-radius: 4px; background: rgba(0,229,160,0.05); color: var(--muted2); border: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+  .realtime-badge {
+    font-family: var(--mono); font-size: 10px; padding: 4px 10px; border-radius: 4px;
+    background: rgba(0,229,160,0.05); color: var(--muted2);
+    border: 1px solid var(--border); letter-spacing: 0.06em;
+    display: flex; align-items: center; gap: 6px;
+  }
   .rt-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); }
   .rt-dot.live { background: var(--accent); animation: blink 1.5s infinite; }
+  .btn-logout {
+    font-family: var(--mono); font-size: 10px; padding: 4px 10px; border-radius: 4px;
+    background: transparent; color: var(--muted2); border: 1px solid var(--border2);
+    cursor: pointer; transition: all 0.2s; letter-spacing: 0.06em;
+  }
+  .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
 
-  /* DB STATUS */
-  .db-status { margin: 16px 0 0; font-family: var(--mono); font-size: 11px; padding: 8px 14px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); display: flex; align-items: center; gap: 8px; color: var(--muted2); }
+  /* ── CONNECTION STATUS ───────────────────────────────── */
+  .db-status {
+    margin: 16px 0 0;
+    font-family: var(--mono); font-size: 11px;
+    padding: 8px 14px; border-radius: 8px;
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px; color: var(--muted2);
+  }
   .db-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
   .db-status.ok   .dot { background: var(--accent); }
   .db-status.fail .dot { background: var(--danger); }
   .db-status.ok   { color: var(--accent2); border-color: rgba(0,229,160,0.15); background: rgba(0,229,160,0.04); }
-  .db-status.fail { color: var(--danger); border-color: rgba(255,77,77,0.2); background: rgba(255,77,77,0.04); }
+  .db-status.fail { color: var(--danger);  border-color: rgba(255,77,77,0.2);   background: rgba(255,77,77,0.04); }
 
-  /* TABS */
-  .tabs { display: flex; gap: 4px; margin: 24px 0 0; border-bottom: 1px solid var(--border); }
-  .tab-btn {
-    font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; padding: 10px 18px;
-    background: transparent; border: none; color: var(--muted2); cursor: pointer;
-    border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s;
+  /* ── AUTH STATUS ─────────────────────────────────────── */
+  .auth-status {
+    margin: 8px 0 0;
+    font-family: var(--mono); font-size: 11px;
+    padding: 7px 14px; border-radius: 8px;
+    background: rgba(0,229,160,0.04); border: 1px solid rgba(0,229,160,0.12);
+    display: flex; align-items: center; gap: 8px; color: var(--accent2);
   }
-  .tab-btn:hover { color: var(--text); }
-  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
+  .auth-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
 
-  /* STATS */
+  /* ── STATS ROW ───────────────────────────────────────── */
   .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 10px; margin: 20px 0 28px; }
   .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
   .stat-label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
   .stat-val { font-family: var(--mono); font-size: 26px; font-weight: 700; color: var(--accent); }
   .stat-sub { font-size: 11px; color: var(--muted2); margin-top: 3px; }
 
-  /* FILTER */
-  .filter-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
-  .filter-input { flex: 1; min-width: 180px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 8px 14px; color: var(--text); font-family: var(--mono); font-size: 12px; outline: none; transition: border-color 0.2s; }
+  /* ── FILTER BAR ──────────────────────────────────────── */
+  .filter-bar {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .filter-input {
+    flex: 1; min-width: 180px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 8px 14px;
+    color: var(--text); font-family: var(--mono); font-size: 12px;
+    outline: none; transition: border-color 0.2s;
+  }
   .filter-input::placeholder { color: var(--muted); }
   .filter-input:focus { border-color: rgba(0,229,160,0.3); }
-  .filter-select { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 8px 12px; color: var(--text); font-family: var(--mono); font-size: 11px; outline: none; cursor: pointer; }
+  .filter-select {
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 8px 12px;
+    color: var(--text); font-family: var(--mono); font-size: 11px;
+    outline: none; cursor: pointer;
+  }
   .filter-select option { background: var(--surface2); }
 
-  /* SECTION */
-  .section-header { display: flex; align-items: center; justify-content: space-between; margin: 24px 0 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  /* ── SECTION ─────────────────────────────────────────── */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin: 32px 0 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
   .section-title { font-family: var(--mono); font-size: 11px; color: var(--muted2); letter-spacing: 0.15em; text-transform: uppercase; }
   .count-badge { font-family: var(--mono); font-size: 11px; padding: 3px 10px; border-radius: 20px; background: rgba(0,229,160,0.1); color: var(--accent); border: 1px solid rgba(0,229,160,0.2); }
 
-  /* TABLE */
+  /* ── NEW ROW FLASH ───────────────────────────────────── */
+  @keyframes newRow {
+    0%   { background: rgba(0,229,160,0.12); }
+    100% { background: transparent; }
+  }
+  .row-new { animation: newRow 2s ease forwards; }
+
+  /* ── TABLE ───────────────────────────────────────────── */
   .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: auto; margin-bottom: 28px; }
   .log-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; min-width: 720px; }
   .log-table thead th { padding: 11px 14px; text-align: left; color: var(--muted); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; border-bottom: 1px solid var(--border); font-weight: 400; background: var(--surface2); white-space: nowrap; }
@@ -129,12 +186,15 @@
   .td-num   { color: var(--muted) !important; }
   .td-ip    { color: var(--accent) !important; }
   .td-muted { color: var(--muted2) !important; }
-  .empty-state { padding: 48px; text-align: center; color: var(--muted); font-size: 13px; }
-  @keyframes newRow { 0%{background:rgba(0,229,160,0.12)} 100%{background:transparent} }
-  .row-new { animation: newRow 2s ease forwards; }
+  .empty-state { padding: 48px; text-align: center; color: var(--muted); font-family: var(--sans); font-size: 13px; }
 
-  /* DETAIL PANEL */
-  #detail-panel { display: none; background: var(--surface); border: 1px solid rgba(0,229,160,0.2); border-radius: 12px; padding: 24px; margin-bottom: 28px; animation: fadeUp 0.25s ease; }
+  /* ── DETAIL PANEL ────────────────────────────────────── */
+  #detail-panel {
+    display: none;
+    background: var(--surface); border: 1px solid rgba(0,229,160,0.2);
+    border-radius: 12px; padding: 24px; margin-bottom: 28px;
+    animation: fadeUp 0.25s ease;
+  }
   @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
   .detail-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
   .detail-ip { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--accent); }
@@ -147,202 +207,274 @@
   .map-link { font-family: var(--mono); font-size: 10px; color: var(--accent2); text-decoration: none; margin-left: 6px; }
   .map-link:hover { text-decoration: underline; }
 
-  /* EMAILS TABLE */
-  .email-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
-  .email-table thead th { padding: 10px 14px; text-align: left; color: var(--muted); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; border-bottom: 1px solid var(--border); background: var(--surface2); }
-  .email-table tbody tr { border-bottom: 1px solid var(--border); }
-  .email-table tbody tr:last-child { border-bottom: none; }
-  .email-table tbody td { padding: 10px 14px; color: var(--text); }
-  .email-val { color: var(--accent) !important; }
-
-  /* FOOTER */
+  /* ── FOOTER ──────────────────────────────────────────── */
   footer { border-top: 1px solid var(--border); padding: 20px 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
   .footer-left { font-family: var(--mono); font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
   .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: blink 1.5s infinite; }
   .action-btns { display: flex; gap: 8px; flex-wrap: wrap; }
   .btn-export { font-family: var(--mono); font-size: 11px; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--muted2); cursor: pointer; transition: all 0.2s; }
   .btn-export:hover { border-color: var(--accent); color: var(--accent); }
-  .btn-clear { font-family: var(--mono); font-size: 11px; padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(255,77,77,0.3); background: transparent; color: var(--danger); cursor: pointer; transition: all 0.2s; }
+  .btn-clear  { font-family: var(--mono); font-size: 11px; padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(255,77,77,0.3); background: transparent; color: var(--danger); cursor: pointer; transition: all 0.2s; }
   .btn-clear:hover { background: rgba(255,77,77,0.08); border-color: var(--danger); }
 
-  /* TOAST */
-  #toast { position: fixed; bottom: 24px; right: 24px; z-index: 999; background: var(--surface); border: 1px solid rgba(0,229,160,0.3); border-radius: 10px; padding: 12px 18px; font-family: var(--mono); font-size: 12px; color: var(--accent); box-shadow: 0 8px 32px rgba(0,0,0,0.4); transform: translateY(20px); opacity: 0; transition: all 0.3s ease; pointer-events: none; }
+  /* ── TOAST ───────────────────────────────────────────── */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 999;
+    background: var(--surface); border: 1px solid rgba(0,229,160,0.3);
+    border-radius: 10px; padding: 12px 18px;
+    font-family: var(--mono); font-size: 12px; color: var(--accent);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transform: translateY(20px); opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+  }
   #toast.show { transform: translateY(0); opacity: 1; }
 </style>
 </head>
 <body>
 
+<!-- LOCK SCREEN -->
 <div id="lock-screen">
   <div class="lock-box">
     <div class="lock-icon">🔐</div>
     <div class="lock-title">ADMIN ACCESS</div>
-    <div class="lock-sub">Enter your password to view the dashboard</div>
-    <input class="lock-input" type="password" id="pwd-input" placeholder="PASSWORD" onkeydown="if(event.key==='Enter')checkPwd()" />
-    <button class="lock-btn" onclick="checkPwd()">UNLOCK</button>
-    <div class="lock-error" id="pwd-error">Incorrect password</div>
+    <div class="lock-sub">Sign in with your Supabase account</div>
+
+    <div class="lock-field-label">Email</div>
+    <input class="lock-input" type="email" id="lock-email"
+           placeholder="you@email.com"
+           onkeydown="if(event.key==='Enter')login()" />
+
+    <div class="lock-field-label">Password</div>
+    <input class="lock-input" type="password" id="lock-password"
+           placeholder="••••••••••••"
+           onkeydown="if(event.key==='Enter')login()" />
+
+    <button class="lock-btn" id="lock-btn" onclick="login()">SIGN IN</button>
+
+    <div class="lock-error"  id="lock-error"></div>
+    <div class="lock-loading" id="lock-loading">Signing in…</div>
+
+    <hr class="lock-divider">
+    <div class="lock-footer">Secured by <span>Supabase Auth</span> · Session stored server-side</div>
   </div>
 </div>
 
+<!-- TOAST -->
 <div id="toast"></div>
 
+<!-- MAIN DASHBOARD -->
 <div class="container" id="main" style="display:none">
   <nav>
     <div class="logo"><div class="logo-dot"></div>IPTRACE</div>
     <div class="nav-right">
       <div class="realtime-badge"><div class="rt-dot" id="rt-dot"></div><span id="rt-label">CONNECTING…</span></div>
       <div class="admin-badge">ADMIN VIEW</div>
+      <button class="btn-logout" onclick="logout()">SIGN OUT</button>
     </div>
   </nav>
 
-  <div class="db-status" id="db-status"><div class="dot"></div><span id="db-status-text">Connecting to Supabase…</span></div>
-
-  <!-- TABS -->
-  <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('visits')">// VISITS</button>
-    <button class="tab-btn" onclick="switchTab('emails')">// EMAILS</button>
+  <!-- AUTH STATUS -->
+  <div class="auth-status" id="auth-status">
+    <div class="dot"></div>
+    <span id="auth-status-text">Authenticated via Supabase Auth</span>
   </div>
 
-  <!-- VISITS TAB -->
-  <div class="tab-panel active" id="tab-visits">
-    <div class="stats-row">
-      <div class="stat-card"><div class="stat-label">Total Visits</div><div class="stat-val" id="s-total">—</div><div class="stat-sub">all time</div></div>
-      <div class="stat-card"><div class="stat-label">Unique IPs</div><div class="stat-val" id="s-unique">—</div><div class="stat-sub">distinct addresses</div></div>
-      <div class="stat-card"><div class="stat-label">Countries</div><div class="stat-val" id="s-countries">—</div><div class="stat-sub">unique countries</div></div>
-      <div class="stat-card"><div class="stat-label">Avg Time</div><div class="stat-val" id="s-avgtime" style="font-size:18px">—</div><div class="stat-sub">seconds on page</div></div>
-    </div>
-
-    <div id="detail-panel">
-      <div class="detail-header">
-        <div class="detail-ip" id="d-ip">—</div>
-        <button class="close-btn" onclick="closeDetail()">CLOSE ✕</button>
-      </div>
-      <div class="detail-grid" id="d-grid"></div>
-    </div>
-
-    <div class="section-header">
-      <span class="section-title">// VISIT LOG</span>
-      <span class="count-badge" id="log-count">0 entries</span>
-    </div>
-
-    <div class="filter-bar">
-      <input class="filter-input" type="text" id="filter-input" placeholder="Filter by IP, city, country, browser…" oninput="applyFilter()" />
-      <select class="filter-select" id="filter-platform" onchange="applyFilter()">
-        <option value="">All Platforms</option>
-        <option>Windows</option><option>macOS</option><option>Linux</option><option>Android</option><option>iOS</option>
-      </select>
-      <select class="filter-select" id="filter-browser" onchange="applyFilter()">
-        <option value="">All Browsers</option>
-        <option>Chrome</option><option>Firefox</option><option>Safari</option><option>Edge</option>
-      </select>
-    </div>
-
-    <div class="table-wrap">
-      <table class="log-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th class="sortable" onclick="sortBy('ip')">IP ↕</th>
-            <th class="sortable" onclick="sortBy('visited_at')">Timestamp ↕</th>
-            <th>Browser</th>
-            <th>Platform</th>
-            <th>Screen</th>
-            <th>Timezone</th>
-            <th>Language</th>
-            <th>Theme</th>
-            <th>Connection</th>
-            <th>Battery</th>
-            <th>CPU</th>
-            <th>RAM</th>
-            <th class="sortable" onclick="sortBy('time_on_page')">Time ↕</th>
-          </tr>
-        </thead>
-        <tbody id="log-body">
-          <tr><td colspan="14"><div class="empty-state">Loading…</div></td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <footer>
-      <div class="footer-left"><div class="live-dot"></div>LIVE — CLICK ROW FOR FULL DETAILS</div>
-      <div class="action-btns">
-        <button class="btn-export" onclick="exportLogs()">EXPORT JSON</button>
-        <button class="btn-export" onclick="exportCSV()">EXPORT CSV</button>
-        <button class="btn-clear"  onclick="clearLogs()">CLEAR ALL</button>
-      </div>
-    </footer>
+  <!-- DB STATUS -->
+  <div class="db-status" id="db-status" style="margin-top:8px;">
+    <div class="dot"></div>
+    <span id="db-status-text">Connecting to Supabase…</span>
   </div>
 
-  <!-- EMAILS TAB -->
-  <div class="tab-panel" id="tab-emails">
-    <div class="stats-row">
-      <div class="stat-card"><div class="stat-label">Total Emails</div><div class="stat-val" id="s-emails">—</div><div class="stat-sub">signups collected</div></div>
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Total Visits</div>
+      <div class="stat-val" id="s-total">—</div>
+      <div class="stat-sub">all time</div>
     </div>
-
-    <div class="section-header">
-      <span class="section-title">// EMAIL SIGNUPS</span>
-      <span class="count-badge" id="email-count">0 signups</span>
+    <div class="stat-card">
+      <div class="stat-label">Unique IPs</div>
+      <div class="stat-val" id="s-unique">—</div>
+      <div class="stat-sub">distinct addresses</div>
     </div>
-
-    <div class="table-wrap">
-      <table class="email-table">
-        <thead>
-          <tr><th>#</th><th>Email Address</th><th>Signed Up</th></tr>
-        </thead>
-        <tbody id="email-body">
-          <tr><td colspan="3"><div class="empty-state">Loading…</div></td></tr>
-        </tbody>
-      </table>
+    <div class="stat-card">
+      <div class="stat-label">Countries</div>
+      <div class="stat-val" id="s-countries">—</div>
+      <div class="stat-sub">unique countries</div>
     </div>
-
-    <footer>
-      <div class="footer-left"><div class="live-dot"></div>NOTIFY LIST</div>
-      <div class="action-btns">
-        <button class="btn-export" onclick="exportEmails()">EXPORT EMAILS</button>
-        <button class="btn-clear"  onclick="clearEmails()">CLEAR ALL</button>
-      </div>
-    </footer>
+    <div class="stat-card">
+      <div class="stat-label">Last Visit</div>
+      <div class="stat-val" id="s-last" style="font-size:18px">—</div>
+      <div class="stat-sub">most recent</div>
+    </div>
   </div>
+
+  <!-- DETAIL PANEL -->
+  <div id="detail-panel">
+    <div class="detail-header">
+      <div class="detail-ip" id="d-ip">—</div>
+      <button class="close-btn" onclick="closeDetail()">CLOSE ✕</button>
+    </div>
+    <div class="detail-grid" id="d-grid"></div>
+  </div>
+
+  <!-- LOG TABLE -->
+  <div class="section-header">
+    <span class="section-title">// VISIT LOG</span>
+    <span class="count-badge" id="log-count">0 entries</span>
+  </div>
+
+  <div class="filter-bar">
+    <input class="filter-input" type="text" id="filter-input"
+           placeholder="Filter by IP, city, country, browser…"
+           oninput="applyFilter()" />
+    <select class="filter-select" id="filter-platform" onchange="applyFilter()">
+      <option value="">All Platforms</option>
+      <option>Windows</option>
+      <option>macOS</option>
+      <option>Linux</option>
+      <option>Android</option>
+      <option>iOS</option>
+    </select>
+    <select class="filter-select" id="filter-browser" onchange="applyFilter()">
+      <option value="">All Browsers</option>
+      <option>Chrome</option>
+      <option>Firefox</option>
+      <option>Safari</option>
+      <option>Edge</option>
+    </select>
+  </div>
+
+  <div class="table-wrap">
+    <table class="log-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th class="sortable" onclick="sortBy('ip')">IP Address ↕</th>
+          <th class="sortable" onclick="sortBy('visited_at')">Timestamp ↕</th>
+          <th>City</th>
+          <th>Country</th>
+          <th>Browser</th>
+          <th>Platform</th>
+          <th>Org / ISP</th>
+        </tr>
+      </thead>
+      <tbody id="log-body">
+        <tr><td colspan="8"><div class="empty-state">Loading…</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>
+    <div class="footer-left"><div class="live-dot"></div>LIVE DASHBOARD — CLICK A ROW FOR DETAILS</div>
+    <div class="action-btns">
+      <button class="btn-export" onclick="exportLogs()">EXPORT JSON</button>
+      <button class="btn-export" onclick="exportCSV()">EXPORT CSV</button>
+      <button class="btn-clear"  onclick="clearLogs()">CLEAR ALL</button>
+    </div>
+  </footer>
 </div>
 
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
+// ══════════════════════════════════════════════════════════════
+//  CONFIGURATION — same values as your index.html + track.js
+// ══════════════════════════════════════════════════════════════
 const SUPABASE_URL      = 'https://adxujurerxlrebawarav.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkeHVqdXJlcnhscmViYXdhcmF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNTU3MjgsImV4cCI6MjA5MjYzMTcyOH0.SeAAFJ6N1qytZDrSMj-ue4J5YU5zPfzpyujDJeHFPJ4';
-const ADMIN_PASSWORD    = 'admin123'; // ← change this!
+const TABLE_NAME        = 'visits';
+// ══════════════════════════════════════════════════════════════
 
-const H = { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY };
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ── AUTH ──────────────────────────────────────────────────────
-function checkPwd() {
-  if (document.getElementById('pwd-input').value === ADMIN_PASSWORD) {
-    document.getElementById('lock-screen').style.display = 'none';
-    document.getElementById('main').style.display = 'block';
-    initDashboard();
-  } else {
-    document.getElementById('pwd-error').style.display = 'block';
-    document.getElementById('pwd-input').value = '';
-    document.getElementById('pwd-input').focus();
+// ── AUTH — check existing session on page load ────────────────
+(async function initAuth() {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) {
+    showDashboard(session.user.email);
   }
-}
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && document.getElementById('lock-screen').style.display !== 'none') checkPwd();
-});
+  // Listen for auth state changes (e.g. token refresh, logout from another tab)
+  db.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT') {
+      document.getElementById('lock-screen').style.display = 'flex';
+      document.getElementById('main').style.display = 'none';
+    }
+    if (event === 'SIGNED_IN' && session) {
+      showDashboard(session.user.email);
+    }
+  });
+})();
 
-// ── TABS ──────────────────────────────────────────────────────
-function switchTab(name) {
-  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', ['visits','emails'][i] === name));
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
+// ── LOGIN ─────────────────────────────────────────────────────
+async function login() {
+  const email    = document.getElementById('lock-email').value.trim();
+  const password = document.getElementById('lock-password').value;
+  const btn      = document.getElementById('lock-btn');
+  const errEl    = document.getElementById('lock-error');
+  const loadEl   = document.getElementById('lock-loading');
+
+  errEl.style.display   = 'none';
+  errEl.textContent     = '';
+
+  if (!email || !password) {
+    errEl.textContent   = 'Please enter your email and password.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled          = true;
+  loadEl.style.display  = 'block';
+
+  const { data, error } = await db.auth.signInWithPassword({ email, password });
+
+  btn.disabled          = false;
+  loadEl.style.display  = 'none';
+
+  if (error) {
+    errEl.textContent   = error.message || 'Invalid email or password.';
+    errEl.style.display = 'block';
+    document.getElementById('lock-password').value = '';
+    document.getElementById('lock-password').focus();
+    return;
+  }
+
+  showDashboard(data.user.email);
+}
+
+// ── LOGOUT ────────────────────────────────────────────────────
+async function logout() {
+  await db.auth.signOut();
+  document.getElementById('lock-email').value    = '';
+  document.getElementById('lock-password').value = '';
+  document.getElementById('lock-screen').style.display = 'flex';
+  document.getElementById('main').style.display  = 'none';
+  toast('Signed out successfully');
+}
+
+// ── SHOW DASHBOARD ────────────────────────────────────────────
+function showDashboard(email) {
+  document.getElementById('lock-screen').style.display = 'none';
+  document.getElementById('main').style.display        = 'block';
+  if (email) {
+    document.getElementById('auth-status-text').textContent =
+      'Signed in as ' + email + ' · Session secured by Supabase Auth';
+  }
+  initDashboard();
 }
 
 // ── HELPERS ───────────────────────────────────────────────────
-function esc(s) { return String(s ?? '—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(s) {
+  return String(s ?? '—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 function fmt(iso) {
   if (!iso) return '—';
   const d = new Date(iso);
   return d.toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'})
-    + ' ' + d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+    +' '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
 }
-function fmtSecs(s) { if (!s) return '—'; if (s < 60) return s + 's'; return Math.floor(s/60) + 'm ' + (s%60) + 's'; }
 function toast(msg, dur=3000) {
   const el = document.getElementById('toast');
   el.textContent = msg;
@@ -351,86 +483,62 @@ function toast(msg, dur=3000) {
 }
 
 // ── STATE ─────────────────────────────────────────────────────
-let allLogs  = [];
-let allEmails = [];
+let allLogs   = [];
 let sortField = 'visited_at';
 let sortAsc   = false;
 
 // ── INIT ──────────────────────────────────────────────────────
 async function initDashboard() {
-  await Promise.all([fetchLogs(), fetchEmails()]);
-  startPolling();
+  await fetchLogs();
+  subscribeRealtime();
 }
 
-// ── FETCH VISITS ──────────────────────────────────────────────
+// ── FETCH FROM SUPABASE ───────────────────────────────────────
 async function fetchLogs() {
   setDbStatus('loading', 'Fetching visits from Supabase…');
   try {
     const resp = await fetch(
-      SUPABASE_URL + '/rest/v1/visits?order=visited_at.desc&limit=1000',
-      { headers: H }
+      SUPABASE_URL + '/rest/v1/' + TABLE_NAME + '?order=visited_at.desc&limit=1000',
+      { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY } }
     );
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    allLogs = await resp.json();
-    setDbStatus('ok', `Connected · ${allLogs.length} rows loaded`);
+    const data = await resp.json();
+    setDbStatus('ok', `Connected · ${data.length} rows loaded`);
+    allLogs = data;
     updateStats();
     applyFilter();
   } catch(err) {
-    setDbStatus('fail', 'Failed: ' + err.message);
-  }
-}
-
-// ── FETCH EMAILS ──────────────────────────────────────────────
-async function fetchEmails() {
-  try {
-    const resp = await fetch(
-      SUPABASE_URL + '/rest/v1/emails?order=signed_up.desc',
-      { headers: H }
-    );
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    allEmails = await resp.json();
-    renderEmails();
-  } catch(err) {
-    console.error('emails fetch:', err);
+    console.error('[admin] fetch error:', err);
+    setDbStatus('fail', 'Failed to connect: ' + err.message);
   }
 }
 
 // ── POLLING ───────────────────────────────────────────────────
-function startPolling() {
-  const dot = document.getElementById('rt-dot');
-  const lbl = document.getElementById('rt-label');
+function subscribeRealtime() {
+  const dot   = document.getElementById('rt-dot');
+  const label = document.getElementById('rt-label');
   dot.classList.add('live');
-  lbl.textContent = 'LIVE';
-
+  label.textContent = 'LIVE';
   setInterval(async () => {
     try {
-      const [vResp, eResp] = await Promise.all([
-        fetch(SUPABASE_URL + '/rest/v1/visits?order=visited_at.desc&limit=1000', { headers: H }),
-        fetch(SUPABASE_URL + '/rest/v1/emails?order=signed_up.desc', { headers: H }),
-      ]);
-      if (vResp.ok) {
-        const data = await vResp.json();
-        if (data.length !== allLogs.length) {
-          const isNew = data.length > allLogs.length;
-          allLogs = data;
-          updateStats();
-          applyFilter(isNew);
-          if (isNew) toast('🟢 New visit detected!');
-        }
+      const resp = await fetch(
+        SUPABASE_URL + '/rest/v1/' + TABLE_NAME + '?order=visited_at.desc&limit=1000',
+        { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY } }
+      );
+      if (!resp.ok) return;
+      const data = await resp.json();
+      if (data.length !== allLogs.length) {
+        const prevCount = allLogs.length;
+        allLogs = data;
+        updateStats();
+        applyFilter(data.length > prevCount);
+        if (data.length > prevCount) toast('🟢 New visit detected!');
       }
-      if (eResp.ok) {
-        const edata = await eResp.json();
-        if (edata.length !== allEmails.length) {
-          allEmails = edata;
-          renderEmails();
-          if (edata.length > allEmails.length) toast('📧 New email signup!');
-        }
-      }
-    } catch(_) {}
+    } catch(e) {}
   }, 10000);
 }
 
-// ── DB STATUS ─────────────────────────────────────────────────
+// ── DB STATUS INDICATOR ───────────────────────────────────────
 function setDbStatus(state, msg) {
   const el = document.getElementById('db-status');
   const tx = document.getElementById('db-status-text');
@@ -440,89 +548,65 @@ function setDbStatus(state, msg) {
 
 // ── STATS ─────────────────────────────────────────────────────
 function updateStats() {
-  const ips       = new Set(allLogs.map(l => l.ip).filter(Boolean));
+  const ips       = new Set(allLogs.map(l => l.ip));
   const countries = new Set(allLogs.map(l => l.country).filter(Boolean));
-  const times     = allLogs.map(l => l.time_on_page).filter(Boolean);
-  const avg       = times.length ? Math.round(times.reduce((a,b) => a+b, 0) / times.length) : null;
-
   document.getElementById('s-total').textContent     = allLogs.length;
   document.getElementById('s-unique').textContent    = ips.size;
   document.getElementById('s-countries').textContent = countries.size;
-  document.getElementById('s-avgtime').textContent   = avg ? fmtSecs(avg) : '—';
-  document.getElementById('s-emails').textContent    = allEmails.length;
+  const last = allLogs[0];
+  document.getElementById('s-last').textContent = last
+    ? new Date(last.visited_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false})
+    : '—';
 }
 
 // ── SORT ──────────────────────────────────────────────────────
 function sortBy(field) {
-  sortAsc = sortField === field ? !sortAsc : false;
-  sortField = field;
+  if (sortField === field) sortAsc = !sortAsc;
+  else { sortField = field; sortAsc = false; }
   applyFilter();
 }
 
-// ── FILTER + RENDER VISITS ────────────────────────────────────
+// ── FILTER + RENDER ───────────────────────────────────────────
 function applyFilter(highlightFirst = false) {
   const query    = document.getElementById('filter-input').value.toLowerCase();
   const platform = document.getElementById('filter-platform').value;
   const browser  = document.getElementById('filter-browser').value;
 
   let filtered = allLogs.filter(l => {
-    const text = [l.ip, l.city, l.region, l.country, l.browser, l.platform, l.timezone, l.language, l.screen_res].join(' ').toLowerCase();
+    const text = [l.ip, l.city, l.region, l.country, l.browser, l.platform, l.org].join(' ').toLowerCase();
     return (!query || text.includes(query))
         && (!platform || l.platform === platform)
         && (!browser  || l.browser  === browser);
   });
 
   filtered.sort((a, b) => {
-    const av = a[sortField] ?? '', bv = b[sortField] ?? '';
+    const av = a[sortField] ?? '';
+    const bv = b[sortField] ?? '';
     return sortAsc ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
   });
 
   renderTable(filtered, highlightFirst);
-  document.getElementById('log-count').textContent = filtered.length + (filtered.length === 1 ? ' entry' : ' entries');
+  document.getElementById('log-count').textContent =
+    filtered.length + (filtered.length === 1 ? ' entry' : ' entries');
 }
 
 // ── RENDER TABLE ──────────────────────────────────────────────
 function renderTable(rows, highlightFirst = false) {
   const tbody = document.getElementById('log-body');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="14"><div class="empty-state">No visits match your filter.</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state">No visits match your filter.</div></td></tr>';
     return;
   }
-  tbody.innerHTML = rows.map((l, i) => {
-    const bat = l.battery_pct != null ? l.battery_pct + '%' + (l.battery_charging ? ' ⚡' : '') : '—';
-    return `<tr class="${highlightFirst && i===0 ? 'row-new' : ''}" onclick="showDetail('${l.id}')">
+  tbody.innerHTML = rows.map((l, i) =>
+    `<tr class="${highlightFirst && i===0 ? 'row-new' : ''}" onclick="showDetail('${l.id}')">
       <td class="td-num">${String(i+1).padStart(3,'0')}</td>
       <td class="td-ip">${esc(l.ip)}</td>
       <td class="td-muted">${fmt(l.visited_at)}</td>
+      <td class="td-muted">${esc(l.city)}</td>
+      <td class="td-muted">${esc(l.country)}</td>
       <td class="td-muted">${esc(l.browser)}</td>
       <td class="td-muted">${esc(l.platform)}</td>
-      <td class="td-muted">${esc(l.screen_res)}</td>
-      <td class="td-muted">${esc(l.timezone)}</td>
-      <td class="td-muted">${esc(l.language)}</td>
-      <td class="td-muted">${esc(l.color_scheme)}</td>
-      <td class="td-muted">${esc(l.connection)}</td>
-      <td class="td-muted">${bat}</td>
-      <td class="td-muted">${l.cpu_cores ?? '—'}</td>
-      <td class="td-muted">${l.device_memory ? l.device_memory + 'GB' : '—'}</td>
-      <td class="td-muted">${fmtSecs(l.time_on_page)}</td>
-    </tr>`;
-  }).join('');
-}
-
-// ── RENDER EMAILS ─────────────────────────────────────────────
-function renderEmails() {
-  const tbody = document.getElementById('email-body');
-  document.getElementById('email-count').textContent = allEmails.length + ' signups';
-  document.getElementById('s-emails').textContent = allEmails.length;
-  if (!allEmails.length) {
-    tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state">No signups yet.</div></td></tr>';
-    return;
-  }
-  tbody.innerHTML = allEmails.map((e, i) =>
-    `<tr>
-      <td class="td-num">${String(i+1).padStart(3,'0')}</td>
-      <td class="email-val">${esc(e.email)}</td>
-      <td class="td-muted">${fmt(e.signed_up)}</td>
+      <td class="td-muted">${esc(l.org)}</td>
     </tr>`
   ).join('');
 }
@@ -532,43 +616,36 @@ function showDetail(id) {
   const l = allLogs.find(r => String(r.id) === String(id));
   if (!l) return;
 
-  document.getElementById('d-ip').textContent = l.ip || 'No IP (direct Supabase)';
+  document.getElementById('d-ip').textContent = l.ip || '—';
 
-  const coordStr = (l.latitude && l.longitude) ? `${Number(l.latitude).toFixed(4)}, ${Number(l.longitude).toFixed(4)}` : '—';
-  const mapsLink = (l.latitude && l.longitude) ? `<a class="map-link" href="https://maps.google.com/?q=${l.latitude},${l.longitude}" target="_blank">↗ Map</a>` : '';
-  const bat      = l.battery_pct != null ? l.battery_pct + '% ' + (l.battery_charging ? '(charging ⚡)' : '(not charging)') : '—';
+  const coordStr = (l.latitude && l.longitude)
+    ? `${Number(l.latitude).toFixed(4)}, ${Number(l.longitude).toFixed(4)}`
+    : '—';
+  const mapsLink = (l.latitude && l.longitude)
+    ? `<a class="map-link" href="https://maps.google.com/?q=${l.latitude},${l.longitude}" target="_blank">↗ Map</a>`
+    : '';
 
   const fields = [
-    ['Timestamp',    fmt(l.visited_at)],
-    ['IP Address',   l.ip],
-    ['City',         l.city],
-    ['Region',       l.region],
-    ['Country',      l.country],
-    ['ISP / Org',    l.org],
-    ['Timezone',     l.timezone],
-    ['Coordinates',  coordStr + mapsLink],
-    ['Browser',      l.browser],
-    ['Platform',     l.platform],
-    ['Screen Res',   l.screen_res],
-    ['Language',     l.language],
-    ['Color Scheme', l.color_scheme],
-    ['Touch Screen', l.touch_screen != null ? (l.touch_screen ? 'Yes' : 'No') : '—'],
-    ['Connection',   l.connection],
-    ['Battery',      bat],
-    ['Orientation',  l.orientation],
-    ['Do Not Track', l.do_not_track != null ? (l.do_not_track ? 'Yes' : 'No') : '—'],
-    ['CPU Cores',    l.cpu_cores],
-    ['Device RAM',   l.device_memory ? l.device_memory + ' GB' : null],
-    ['Time on Page', fmtSecs(l.time_on_page)],
-    ['Referrer',     l.referrer || 'Direct'],
-    ['Page URL',     l.page_url],
-    ['User Agent',   l.user_agent],
+    ['Timestamp',   fmt(l.visited_at)],
+    ['City',        l.city],
+    ['Region',      l.region],
+    ['Country',     l.country],
+    ['ISP / Org',   l.org],
+    ['Timezone',    l.timezone],
+    ['Postal',      l.postal],
+    ['ASN',         l.asn],
+    ['Coordinates', coordStr + mapsLink],
+    ['Browser',     l.browser],
+    ['Platform',    l.platform],
+    ['Referrer',    l.referrer || 'Direct'],
+    ['Page URL',    l.page_url],
+    ['User Agent',  l.user_agent],
   ];
 
   document.getElementById('d-grid').innerHTML = fields.map(([k, v]) =>
     `<div class="detail-item">
        <div class="detail-key">${k}</div>
-       <div class="detail-val">${k === 'Coordinates' ? (coordStr + mapsLink) : esc(v)}</div>
+       <div class="detail-val">${k === 'Coordinates' ? (v) : esc(v)}</div>
      </div>`
   ).join('');
 
@@ -576,48 +653,55 @@ function showDetail(id) {
   panel.style.display = 'block';
   panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
-function closeDetail() { document.getElementById('detail-panel').style.display = 'none'; }
 
-// ── EXPORT VISITS ─────────────────────────────────────────────
+function closeDetail() {
+  document.getElementById('detail-panel').style.display = 'none';
+}
+
+// ── EXPORT JSON ───────────────────────────────────────────────
 function exportLogs() {
   const blob = new Blob([JSON.stringify(allLogs, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = `visits-${new Date().toISOString().slice(0,10)}.json`; a.click();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `iptrace-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
   toast('📥 JSON exported');
 }
+
+// ── EXPORT CSV ────────────────────────────────────────────────
 function exportCSV() {
-  const cols = ['id','ip','visited_at','city','region','country','org','timezone','latitude','longitude','browser','platform','screen_res','language','color_scheme','touch_screen','connection','battery_pct','battery_charging','orientation','do_not_track','cpu_cores','device_memory','time_on_page','referrer','page_url'];
+  const cols = ['id','ip','visited_at','city','region','country','org','timezone','postal','asn','latitude','longitude','browser','platform','referrer','page_url'];
   const header = cols.join(',');
-  const rows = allLogs.map(l => cols.map(c => { const v = String(l[c] ?? '').replace(/"/g,'""'); return v.includes(',') || v.includes('"') ? `"${v}"` : v; }).join(','));
+  const rows = allLogs.map(l =>
+    cols.map(c => {
+      const v = String(l[c] ?? '').replace(/"/g, '""');
+      return v.includes(',') || v.includes('"') || v.includes('\n') ? `"${v}"` : v;
+    }).join(',')
+  );
   const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = `visits-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `iptrace-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
   toast('📥 CSV exported');
 }
 
-// ── EXPORT EMAILS ─────────────────────────────────────────────
-function exportEmails() {
-  const lines = ['email,signed_up', ...allEmails.map(e => `${e.email},${e.signed_up}`)];
-  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = `emails-${new Date().toISOString().slice(0,10)}.csv`; a.click();
-  toast('📥 Emails exported');
-}
-
-// ── CLEAR ─────────────────────────────────────────────────────
+// ── CLEAR ALL ─────────────────────────────────────────────────
 async function clearLogs() {
-  if (!confirm('Delete ALL visit records? This cannot be undone.')) return;
-  const resp = await fetch(SUPABASE_URL + '/rest/v1/visits?id=gte.0', { method: 'DELETE', headers: H });
-  if (!resp.ok) { alert('Error: HTTP ' + resp.status); return; }
-  allLogs = []; updateStats(); applyFilter(); closeDetail();
-  toast('🗑 All visits deleted');
-}
-async function clearEmails() {
-  if (!confirm('Delete ALL email signups? This cannot be undone.')) return;
-  const resp = await fetch(SUPABASE_URL + '/rest/v1/emails?id=gte.0', { method: 'DELETE', headers: H });
-  if (!resp.ok) { alert('Error: HTTP ' + resp.status); return; }
-  allEmails = []; renderEmails(); updateStats();
-  toast('🗑 All emails deleted');
+  if (!confirm('Delete ALL visit records from Supabase? This cannot be undone.')) return;
+  const resp = await fetch(SUPABASE_URL + '/rest/v1/' + TABLE_NAME + '?id=gte.0', {
+    method: 'DELETE',
+    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY }
+  });
+  if (!resp.ok) {
+    alert('Error clearing logs: HTTP ' + resp.status);
+    return;
+  }
+  allLogs = [];
+  updateStats();
+  applyFilter();
+  closeDetail();
+  toast('🗑 All records deleted');
 }
 </script>
 </body>
