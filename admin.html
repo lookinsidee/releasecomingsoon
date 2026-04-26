@@ -523,6 +523,9 @@ body::after {
       <button class="nav-item" onclick="switchTab('devices')">
         <span class="nav-item-icon">💻</span> Devices
       </button>
+      <button class="nav-item" onclick="switchTab('fingerprints')">
+        <span class="nav-item-icon">🔬</span> Fingerprints
+      </button>
       <button class="nav-item" onclick="switchTab('events')">
         <span class="nav-item-icon">⚡</span> Events
         <span class="nav-item-badge" id="nav-events-count">0</span>
@@ -663,7 +666,8 @@ body::after {
                 <th>Browser</th>
                 <th>Platform</th>
                 <th class="sortable" onclick="sortBy('time_on_page')">Time ↕</th>
-                <th>ISP</th>
+                <th>Threats</th>
+                <th>Fingerprint</th>
               </tr>
             </thead>
             <tbody id="log-body">
@@ -861,6 +865,35 @@ body::after {
   </div>
 </div>
 
+      <!-- FINGERPRINTS TAB -->
+      <div id="tab-fingerprints" style="display:none">
+        <div class="stats-grid">
+          <div class="stat-card gold"><div class="stat-label">Unique Devices</div><div class="stat-val" id="fp-unique">—</div><div class="stat-sub">by fingerprint hash</div></div>
+          <div class="stat-card green"><div class="stat-label">Ad Blockers</div><div class="stat-val" id="fp-adblock">—</div><div class="stat-sub">visitors blocking ads</div></div>
+          <div class="stat-card blue"><div class="stat-label">Incognito</div><div class="stat-val" id="fp-incognito">—</div><div class="stat-sub">private browsing</div></div>
+          <div class="stat-card red"><div class="stat-label">Bots / VPN / Tor</div><div class="stat-val" id="fp-threats">—</div><div class="stat-sub">flagged visitors</div></div>
+          <div class="stat-card gold"><div class="stat-label">Returning Visitors</div><div class="stat-val" id="fp-returning">—</div><div class="stat-sub">visited before</div></div>
+          <div class="stat-card green"><div class="stat-label">Known Emails</div><div class="stat-val" id="fp-emails-known">—</div><div class="stat-sub">gave email address</div></div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-card"><div class="chart-title">// Top GPU Renderers</div><div id="fp-gpu-bars" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div></div>
+          <div class="chart-card"><div class="chart-title">// Threat Breakdown</div><div id="fp-threat-bars" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div></div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-card"><div class="chart-title">// Font Count</div><div id="fp-font-bars" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div></div>
+          <div class="chart-card"><div class="chart-title">// Pixel Ratio</div><div id="fp-pxratio-bars" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div></div>
+        </div>
+        <div class="section-hdr" style="margin-top:8px">
+          <div class="section-hdr-left"><span class="section-title">// Fingerprint Details</span><span class="count-badge" id="fp-count-badge">0</span></div>
+        </div>
+        <div class="table-wrap">
+          <table class="log-table" style="min-width:900px">
+            <thead><tr><th>FP Hash</th><th>IP</th><th>GPU</th><th>Canvas</th><th>Fonts</th><th>AdBlock</th><th>Incognito</th><th>Bot</th><th>VPN/Tor</th><th>Email</th></tr></thead>
+            <tbody id="fp-body"><tr><td colspan="10"><div class="empty-state">Loading...</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL      = 'https://adxujurerxlrebawarav.supabase.co';
@@ -922,7 +955,7 @@ function showDashboard(email) {
 }
 
 // ── TABS ──────────────────────────────────────────────────────
-const TAB_TITLES = { visits: 'Visit Analytics', emails: 'Email Signups', geo: 'Geography', devices: 'Device Analytics', events: 'Live Event Feed' };
+const TAB_TITLES = { visits: 'Visit Analytics', emails: 'Email Signups', geo: 'Geography', devices: 'Device Analytics', events: 'Live Event Feed', fingerprints: 'Fingerprint Intelligence' };
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('[id^="tab-"]').forEach(el => el.style.display = 'none');
@@ -934,6 +967,7 @@ function switchTab(tab) {
   if (tab === 'geo') renderGeo();
   if (tab === 'devices') renderDevices();
   if (tab === 'events') fetchEvents();
+  if (tab === 'fingerprints') renderFingerprints();
 }
 
 // ── INIT ──────────────────────────────────────────────────────
@@ -1198,6 +1232,9 @@ function renderTable(rows, highlightFirst = false) {
   tbody.innerHTML = rows.map((l, i) => {
     const flag = COUNTRY_FLAGS[l.country] || '🌐';
     const dur = l.time_on_page ? l.time_on_page + 's' : '—';
+    const threats = [l.is_tor&&'TOR', l.is_proxy&&'VPN', l.likely_bot&&'BOT', l.ad_blocker&&'ADBLOCK', l.incognito&&'INCOG'].filter(Boolean);
+    const threatHtml = threats.map(t=>`<span style="font-size:8px;padding:1px 4px;border-radius:2px;background:rgba(229,9,20,0.2);color:#ff6b6b;margin-right:2px">${t}</span>`).join('');
+    const fpShort = l.fp_hash ? l.fp_hash.slice(0,8) : '—';
     return `<tr class="${highlightFirst && i===0 ? 'row-new' : ''}" onclick="showDetail('${l.id}')">
       <td style="color:var(--muted)">${String(i+1).padStart(3,'0')}</td>
       <td class="td-ip">${esc(l.ip)}</td>
@@ -1207,7 +1244,8 @@ function renderTable(rows, highlightFirst = false) {
       <td style="color:var(--muted2)">${esc(l.browser)}</td>
       <td style="color:var(--muted2)">${esc(l.platform)}</td>
       <td style="color:var(--muted2)">${dur}</td>
-      <td style="color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.org)}</td>
+      <td>${threatHtml}</td>
+      <td style="color:var(--muted);font-family:var(--mono);font-size:10px">${fpShort}</td>
     </tr>`;
   }).join('');
 }
@@ -1221,12 +1259,21 @@ function showDetail(id) {
   document.getElementById('d-ip').textContent = l.ip || '—';
 
   const tags = [];
-  if (l.browser)   tags.push(l.browser);
-  if (l.platform)  tags.push(l.platform);
-  if (l.country)   tags.push(l.country);
+  if (l.browser)      tags.push(l.browser);
+  if (l.platform)     tags.push(l.platform);
+  if (l.country)      tags.push(l.country);
   if (l.touch_screen) tags.push('Touch');
-  if (l.color_scheme) tags.push(l.color_scheme === 'dark' ? '🌙 Dark mode' : '☀️ Light mode');
-  document.getElementById('d-tags').innerHTML = tags.map(t => `<span class="detail-tag">${esc(t)}</span>`).join('');
+  if (l.ad_blocker)   tags.push('Ad Blocker');
+  if (l.incognito)    tags.push('Incognito');
+  if (l.likely_bot)   tags.push('BOT DETECTED');
+  if (l.is_tor)       tags.push('TOR');
+  if (l.is_proxy)     tags.push('PROXY/VPN');
+  if (l.returning_visitor) tags.push('Returning');
+  if (l.color_scheme) tags.push(l.color_scheme === 'dark' ? 'Dark Mode' : 'Light Mode');
+  document.getElementById('d-tags').innerHTML = tags.map(t => {
+    const danger = ['BOT DETECTED','TOR','PROXY/VPN'].includes(t);
+    return `<span class="detail-tag" style="${danger?'background:rgba(229,9,20,0.15);color:#ff6b6b;border-color:rgba(229,9,20,0.3)':''}">${esc(t)}</span>`;
+  }).join('');
 
   const coordStr = (l.latitude && l.longitude)
     ? `${Number(l.latitude).toFixed(4)}, ${Number(l.longitude).toFixed(4)}`
@@ -1235,35 +1282,91 @@ function showDetail(id) {
     ? ` <a class="map-link" href="https://maps.google.com/?q=${l.latitude},${l.longitude}" target="_blank">↗ Map</a>`
     : '';
 
-  const fields = [
-    ['Timestamp',   fmt(l.visited_at)],
-    ['City',        l.city],
-    ['Region',      l.region],
-    ['Country',     l.country],
-    ['ISP / Org',   l.org],
-    ['Timezone',    l.timezone],
-    ['Postal',      l.postal],
-    ['ASN',         l.asn],
-    ['Coordinates', coordStr + mapsLink],
-    ['Screen',      l.screen_res],
-    ['Language',    l.language],
-    ['Connection',  l.connection],
-    ['Battery',     l.battery_pct != null ? l.battery_pct + '%' + (l.battery_charging ? ' ⚡' : '') : null],
-    ['CPU Cores',   l.cpu_cores],
-    ['Device RAM',  l.device_memory ? l.device_memory + 'GB' : null],
-    ['Orientation', l.orientation],
-    ['Time on Page',l.time_on_page ? l.time_on_page + 's' : null],
-    ['Referrer',    l.referrer || 'Direct'],
-    ['Page URL',    l.page_url],
-    ['User Agent',  l.user_agent],
+  const bool = v => v === true ? 'YES' : v === false ? 'No' : null;
+  const threat = v => v === true ? 'YES ⚠' : v === false ? 'No' : null;
+
+  const sections = [
+    { title: 'Identity & Visit', fields: [
+      ['Visit ID',        l.visit_id],
+      ['Fingerprint Hash',l.fp_hash],
+      ['Known Email',     l.known_email],
+      ['Visit #',         l.visit_count ? '#' + l.visit_count : null],
+      ['Returning',       bool(l.returning_visitor)],
+      ['Timestamp',       fmt(l.visited_at)],
+      ['Time on Page',    l.time_on_page ? l.time_on_page + 's' : null],
+      ['Scroll Depth',    l.scroll_depth != null ? l.scroll_depth + '%' : null],
+    ]},
+    { title: 'Network & Location', fields: [
+      ['IP Address',      l.ip],
+      ['City',            l.city],
+      ['Region',          l.region],
+      ['Country',         l.country + (l.country_code ? ' ('+l.country_code+')' : '')],
+      ['ISP / Org',       l.org],
+      ['ASN',             l.asn],
+      ['Timezone',        l.timezone],
+      ['Postal',          l.postal],
+      ['Coordinates',     coordStr + mapsLink],
+      ['Reverse DNS',     l.reverse_dns],
+    ]},
+    { title: 'Threat Intelligence', fields: [
+      ['Proxy / VPN',     threat(l.is_proxy)],
+      ['Tor Exit Node',   threat(l.is_tor)],
+      ['Ad Blocker',      bool(l.ad_blocker)],
+      ['Incognito',       bool(l.incognito)],
+      ['Bot Detected',    threat(l.likely_bot)],
+      ['Bot Score',       l.bot_score != null ? l.bot_score + '/8' : null],
+      ['Has Webdriver',   threat(l.has_webdriver)],
+      ['Do Not Track',    bool(l.do_not_track)],
+    ]},
+    { title: 'Device & Hardware', fields: [
+      ['Browser',         l.browser],
+      ['Platform',        l.platform],
+      ['Screen',          l.screen_res],
+      ['Avail Screen',    l.avail_screen],
+      ['Window Size',     l.inner_size],
+      ['Color Depth',     l.color_depth ? l.color_depth + 'bit' : null],
+      ['Pixel Ratio',     l.pixel_ratio ? l.pixel_ratio + 'x' : null],
+      ['CPU Cores',       l.cpu_cores],
+      ['Device RAM',      l.device_memory ? l.device_memory + 'GB' : null],
+      ['Battery',         l.battery_pct != null ? l.battery_pct + '%' + (l.battery_charging ? ' ⚡' : '') : null],
+      ['Connection',      l.connection],
+      ['Touch Screen',    bool(l.touch_screen)],
+      ['Orientation',     l.orientation],
+      ['Language',        l.language],
+      ['Color Scheme',    l.color_scheme],
+      ['Reduced Motion',  bool(l.prefers_reduced_motion)],
+    ]},
+    { title: 'Fingerprints', fields: [
+      ['Canvas FP',       l.canvas_fp],
+      ['WebGL Vendor',    l.webgl_vendor],
+      ['WebGL Renderer',  l.webgl_renderer],
+      ['Audio FP',        l.audio_fp ? l.audio_fp.slice(0,40)+'...' : null],
+      ['Fonts',           l.fonts ? l.fonts.split(',').length + ' fonts detected' : null],
+      ['Plugins',         l.plugins || null],
+    ]},
+    { title: 'Behavior', fields: [
+      ['Mouse Moves',     l.mouse_movements != null ? l.mouse_movements.toLocaleString() : null],
+      ['Clicks',          l.clicks_total != null ? l.clicks_total.toLocaleString() : null],
+      ['Keystrokes',      l.keystrokes_total != null ? l.keystrokes_total.toLocaleString() : null],
+      ['Avg Key Interval',l.avg_key_interval_ms != null ? l.avg_key_interval_ms + 'ms' : null],
+      ['Mouse Velocity',  l.mouse_velocity_avg != null ? l.mouse_velocity_avg + 'px/move' : null],
+    ]},
+    { title: 'Session', fields: [
+      ['Referrer',        l.referrer || 'Direct'],
+      ['Page URL',        l.page_url],
+      ['User Agent',      l.user_agent],
+    ]},
   ];
 
-  document.getElementById('d-grid').innerHTML = fields.map(([k, v]) => `
-    <div class="detail-item">
-      <div class="detail-key">${k}</div>
-      <div class="detail-val">${k==='Coordinates' ? v : esc(v)}</div>
-    </div>
-  `).join('');
+  document.getElementById('d-grid').innerHTML = sections.map(sec => {
+    const items = sec.fields.filter(([,v]) => v != null && v !== '' && v !== '—').map(([k,v]) => `
+      <div class="detail-item">
+        <div class="detail-key">${k}</div>
+        <div class="detail-val">${k==='Coordinates' ? v : esc(String(v))}</div>
+      </div>`).join('');
+    if (!items) return '';
+    return `<div style="grid-column:1/-1;margin-top:10px;margin-bottom:4px;font-family:var(--mono);font-size:9px;color:var(--gold);letter-spacing:.15em;text-transform:uppercase">${sec.title}</div>${items}`;
+  }).join('');
 
   const panel = document.getElementById('detail-panel');
   panel.style.display = 'block';
@@ -1499,6 +1602,80 @@ function exportEvents() {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `flixnow-events-${today()}.json`; a.click();
   toast('📥 Events exported');
 }
+
+function renderFingerprints() {
+  const withFp = allLogs.filter(l => l.fp_hash);
+  const unique = new Set(withFp.map(l => l.fp_hash)).size;
+  const adBlock = allLogs.filter(l => l.ad_blocker).length;
+  const incog = allLogs.filter(l => l.incognito).length;
+  const threats = allLogs.filter(l => l.likely_bot || l.is_tor || l.is_proxy).length;
+  const returning = allLogs.filter(l => l.returning_visitor).length;
+  const knownEmail = allLogs.filter(l => l.known_email).length;
+
+  document.getElementById('fp-unique').textContent = unique;
+  document.getElementById('fp-adblock').textContent = adBlock;
+  document.getElementById('fp-incognito').textContent = incog;
+  document.getElementById('fp-threats').textContent = threats;
+  document.getElementById('fp-returning').textContent = returning;
+  document.getElementById('fp-emails-known').textContent = knownEmail;
+
+  // GPU bars
+  const gpuMap = {};
+  allLogs.forEach(l => { if (l.webgl_renderer) { const k = l.webgl_renderer.slice(0,35); gpuMap[k] = (gpuMap[k]||0)+1; } });
+  const gpuSorted = Object.entries(gpuMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const gpuMax = gpuSorted[0]?.[1] || 1;
+  document.getElementById('fp-gpu-bars').innerHTML = gpuSorted.map(([k,v]) => hBar(k,v,gpuMax,'var(--green)')).join('') || '<div style="color:var(--muted);font-size:12px">No GPU data yet</div>';
+
+  // Threat breakdown bars
+  const threatData = [
+    ['Bot detected', allLogs.filter(l=>l.likely_bot).length, 'var(--red)'],
+    ['VPN / Proxy', allLogs.filter(l=>l.is_proxy).length, '#ff9800'],
+    ['Tor exit node', allLogs.filter(l=>l.is_tor).length, '#e040fb'],
+    ['Has webdriver', allLogs.filter(l=>l.has_webdriver).length, 'var(--red)'],
+    ['Ad blocker', allLogs.filter(l=>l.ad_blocker).length, 'var(--gold)'],
+    ['Incognito', allLogs.filter(l=>l.incognito).length, 'var(--blue)'],
+    ['Do not track', allLogs.filter(l=>l.do_not_track).length, 'var(--muted2)'],
+  ];
+  const threatMax = Math.max(...threatData.map(t=>t[1]), 1);
+  document.getElementById('fp-threat-bars').innerHTML = threatData.map(([k,v,c]) => hBar(k,v,threatMax,c)).join('');
+
+  // Font count buckets
+  const fontBuckets = {'0 fonts':0,'1-5':0,'6-10':0,'11-15':0,'16+':0};
+  allLogs.forEach(l => {
+    if (!l.fonts) { fontBuckets['0 fonts']++; return; }
+    const n = l.fonts.split(',').filter(Boolean).length;
+    if (n<=5) fontBuckets['1-5']++;
+    else if (n<=10) fontBuckets['6-10']++;
+    else if (n<=15) fontBuckets['11-15']++;
+    else fontBuckets['16+']++;
+  });
+  const fontMax = Math.max(...Object.values(fontBuckets), 1);
+  document.getElementById('fp-font-bars').innerHTML = Object.entries(fontBuckets).map(([k,v]) => hBar(k,v,fontMax,'var(--blue)')).join('');
+
+  // Pixel ratio
+  const pxMap = {};
+  allLogs.forEach(l => { if (l.pixel_ratio) { const k = l.pixel_ratio + 'x'; pxMap[k]=(pxMap[k]||0)+1; } });
+  const pxSorted = Object.entries(pxMap).sort((a,b)=>b[1]-a[1]);
+  const pxMax = pxSorted[0]?.[1] || 1;
+  document.getElementById('fp-pxratio-bars').innerHTML = pxSorted.map(([k,v]) => hBar(k,v,pxMax,'var(--gold)')).join('');
+
+  // Fingerprint table
+  document.getElementById('fp-count-badge').textContent = allLogs.length + ' records';
+  document.getElementById('fp-body').innerHTML = allLogs.slice(0,200).map(l => `
+    <tr onclick="showDetail('${l.id}')">
+      <td style="font-family:var(--mono);font-size:10px;color:var(--gold)">${esc((l.fp_hash||'').slice(0,10))}</td>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--gold)">${esc(l.ip)}</td>
+      <td style="font-size:11px;color:var(--muted2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.webgl_renderer)}</td>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--muted2)">${esc((l.canvas_fp||'').slice(0,12))}</td>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--muted2)">${l.fonts?l.fonts.split(',').length:'—'}</td>
+      <td style="font-size:11px;color:${l.ad_blocker?'var(--gold)':'var(--muted)'}">${l.ad_blocker?'YES':'No'}</td>
+      <td style="font-size:11px;color:${l.incognito?'var(--blue)':'var(--muted)'}">${l.incognito?'YES':'No'}</td>
+      <td style="font-size:11px;color:${l.likely_bot?'var(--red)':'var(--muted)'}">${l.likely_bot?'BOT ⚠':'No'}</td>
+      <td style="font-size:11px;color:${(l.is_tor||l.is_proxy)?'#e040fb':'var(--muted)'}">${l.is_tor?'TOR':l.is_proxy?'VPN':'No'}</td>
+      <td style="font-size:11px;color:var(--green)">${esc(l.known_email)}</td>
+    </tr>`).join('') || '<tr><td colspan="10"><div class="empty-state">No fingerprint data yet</div></td></tr>';
+}
+
 </script>
 </body>
 </html>
