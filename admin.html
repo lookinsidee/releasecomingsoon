@@ -523,6 +523,10 @@ body::after {
       <button class="nav-item" onclick="switchTab('devices')">
         <span class="nav-item-icon">💻</span> Devices
       </button>
+      <button class="nav-item" onclick="switchTab('events')">
+        <span class="nav-item-icon">⚡</span> Events
+        <span class="nav-item-badge" id="nav-events-count">0</span>
+      </button>
     </div>
     <div class="nav-section">
       <div class="nav-label">Tools</div>
@@ -724,6 +728,112 @@ body::after {
         </div>
       </div>
 
+      <!-- EVENTS TAB -->
+      <div id="tab-events" style="display:none">
+        <div class="stats-grid">
+          <div class="stat-card gold">
+            <div class="stat-label">Total Events</div>
+            <div class="stat-val" id="ev-total">—</div>
+            <div class="stat-sub">all time</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Movies Watched</div>
+            <div class="stat-val" id="ev-watched">—</div>
+            <div class="stat-sub">watch_started events</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-label">Searches</div>
+            <div class="stat-val" id="ev-searches">—</div>
+            <div class="stat-sub">search events</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-label">Rage Clicks</div>
+            <div class="stat-val" id="ev-rage">—</div>
+            <div class="stat-sub">frustrated users</div>
+          </div>
+          <div class="stat-card gold">
+            <div class="stat-label">Gate Conversions</div>
+            <div class="stat-val" id="ev-converted">—</div>
+            <div class="stat-sub">email gate submits</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Gate Dismissals</div>
+            <div class="stat-val" id="ev-dismissed">—</div>
+            <div class="stat-sub">closed without email</div>
+          </div>
+        </div>
+
+        <!-- Top movies watched chart -->
+        <div class="chart-row" style="grid-template-columns:1fr 1fr;margin-bottom:20px">
+          <div class="chart-card">
+            <div class="chart-title">// Top Movies Watched</div>
+            <div id="ev-top-movies" style="display:flex;flex-direction:column;gap:7px;margin-top:8px"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">// Top Searches</div>
+            <div id="ev-top-searches" style="display:flex;flex-direction:column;gap:7px;margin-top:8px"></div>
+          </div>
+        </div>
+
+        <!-- Server performance -->
+        <div class="chart-row" style="grid-template-columns:1fr;margin-bottom:20px">
+          <div class="chart-card">
+            <div class="chart-title">// Server Usage (which loaded successfully)</div>
+            <div id="ev-servers" style="display:flex;flex-direction:column;gap:7px;margin-top:8px"></div>
+          </div>
+        </div>
+
+        <!-- Live feed -->
+        <div class="section-hdr">
+          <div class="section-hdr-left">
+            <span class="section-title">// Live Event Feed</span>
+            <span class="count-badge" id="ev-count-badge">0 events</span>
+          </div>
+          <div class="action-btns">
+            <select class="filter-select" id="ev-filter-type" onchange="renderEvents()">
+              <option value="">All Events</option>
+              <option value="movie_click">movie_click</option>
+              <option value="watch_started">watch_started</option>
+              <option value="watch_ended">watch_ended</option>
+              <option value="server_loaded">server_loaded</option>
+              <option value="server_switch">server_switch</option>
+              <option value="search">search</option>
+              <option value="gate_shown">gate_shown</option>
+              <option value="gate_converted">gate_converted</option>
+              <option value="gate_dismissed">gate_dismissed</option>
+              <option value="watchlist_updated">watchlist_updated</option>
+              <option value="rage_click">rage_click</option>
+              <option value="heatmap_batch">heatmap_batch</option>
+              <option value="vpn_tor_detected">vpn_tor_detected</option>
+              <option value="review_posted">review_posted</option>
+            </select>
+            <input class="filter-input" type="text" id="ev-filter-search" placeholder="Filter by visit ID, movie title…" oninput="renderEvents()" style="width:220px">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="log-table" style="min-width:700px">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Timestamp</th>
+                <th>Event</th>
+                <th>Visit ID</th>
+                <th>Data</th>
+              </tr>
+            </thead>
+            <tbody id="ev-body">
+              <tr><td colspan="5"><div class="empty-state">Loading events…</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="action-bar">
+          <div class="last-update"><div class="live-dot on"></div><span>Events update every 10s</span></div>
+          <div class="action-btns">
+            <button class="btn-action" onclick="exportEvents()">Export Events JSON</button>
+          </div>
+        </div>
+      </div>
+
       <!-- DEVICES TAB -->
       <div id="tab-devices" style="display:none">
         <div class="chart-row">
@@ -812,7 +922,7 @@ function showDashboard(email) {
 }
 
 // ── TABS ──────────────────────────────────────────────────────
-const TAB_TITLES = { visits: 'Visit Analytics', emails: 'Email Signups', geo: 'Geography', devices: 'Device Analytics' };
+const TAB_TITLES = { visits: 'Visit Analytics', emails: 'Email Signups', geo: 'Geography', devices: 'Device Analytics', events: 'Live Event Feed' };
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('[id^="tab-"]').forEach(el => el.style.display = 'none');
@@ -823,12 +933,14 @@ function switchTab(tab) {
   if (tab === 'emails' && allEmails.length === 0) fetchEmails();
   if (tab === 'geo') renderGeo();
   if (tab === 'devices') renderDevices();
+  if (tab === 'events') fetchEvents();
 }
 
 // ── INIT ──────────────────────────────────────────────────────
 async function initDashboard() {
   await fetchLogs();
   await fetchEmails();
+  await fetchEvents();
   startPolling();
 }
 
@@ -915,6 +1027,21 @@ function startPolling() {
       );
       const emails = await resp2.json();
       if (emails.length !== allEmails.length) { allEmails = emails; renderEmails(); document.getElementById('nav-emails-count').textContent = allEmails.length; }
+    } catch(_) {}
+    // Poll events
+    try {
+      const re = await fetch(
+        `${SUPABASE_URL}/rest/v1/events?order=ts.desc&limit=500`,
+        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY } }
+      );
+      const evts = await re.json();
+      if (evts.length !== allEvents.length) {
+        const wasNew = evts.length > allEvents.length;
+        allEvents = evts;
+        renderEvents();
+        document.getElementById('nav-events-count').textContent = allEvents.length;
+        if (wasNew && currentTab === 'events') renderEvents(true);
+      }
     } catch(_) {}
   }, 10000);
 }
@@ -1197,6 +1324,180 @@ function setDbStatus(state, msg) {
   const text = document.getElementById('db-text');
   pill.className = 'db-pill ' + (state==='ok' ? 'ok' : state==='fail' ? 'fail' : '');
   text.textContent = msg;
+}
+
+// ── EVENTS TAB ─────────────────────────────────────────────────
+let allEvents = [];
+
+async function fetchEvents() {
+  try {
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/events?order=ts.desc&limit=500`,
+      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY } }
+    );
+    if (!resp.ok) return;
+    allEvents = await resp.json();
+    renderEvents();
+    renderEventStats();
+    document.getElementById('nav-events-count').textContent = allEvents.length;
+  } catch(_) {}
+}
+
+function renderEventStats() {
+  const watched    = allEvents.filter(e => e.event === 'watch_started').length;
+  const searches   = allEvents.filter(e => e.event === 'search').length;
+  const rage       = allEvents.filter(e => e.event === 'rage_click').length;
+  const converted  = allEvents.filter(e => e.event === 'gate_converted').length;
+  const dismissed  = allEvents.filter(e => e.event === 'gate_dismissed').length;
+
+  document.getElementById('ev-total').textContent    = allEvents.length;
+  document.getElementById('ev-watched').textContent  = watched;
+  document.getElementById('ev-searches').textContent = searches;
+  document.getElementById('ev-rage').textContent     = rage;
+  document.getElementById('ev-converted').textContent= converted;
+  document.getElementById('ev-dismissed').textContent= dismissed;
+
+  // Top movies watched
+  const movieCounts = {};
+  allEvents.filter(e => e.event === 'watch_started').forEach(e => {
+    const title = e.data?.movie_title || ('ID:' + e.data?.movie_id) || 'Unknown';
+    movieCounts[title] = (movieCounts[title] || 0) + 1;
+  });
+  const topMovies = Object.entries(movieCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxM = topMovies[0]?.[1] || 1;
+  document.getElementById('ev-top-movies').innerHTML = topMovies.length
+    ? topMovies.map(([title,count]) => hBar(title, count, maxM, 'var(--gold)')).join('')
+    : '<div style="color:var(--muted);font-family:var(--mono);font-size:11px">No watch events yet</div>';
+
+  // Top searches
+  const searchCounts = {};
+  allEvents.filter(e => e.event === 'search').forEach(e => {
+    const q = e.data?.query || 'unknown';
+    searchCounts[q] = (searchCounts[q] || 0) + 1;
+  });
+  const topSearches = Object.entries(searchCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxS = topSearches[0]?.[1] || 1;
+  document.getElementById('ev-top-searches').innerHTML = topSearches.length
+    ? topSearches.map(([q,count]) => hBar(q, count, maxS, 'var(--blue)')).join('')
+    : '<div style="color:var(--muted);font-family:var(--mono);font-size:11px">No searches yet</div>';
+
+  // Server usage (from server_loaded events)
+  const serverCounts = {};
+  allEvents.filter(e => e.event === 'server_loaded').forEach(e => {
+    const s = e.data?.server || 'Unknown';
+    serverCounts[s] = (serverCounts[s] || 0) + 1;
+  });
+  const topServers = Object.entries(serverCounts).sort((a,b)=>b[1]-a[1]);
+  const maxSrv = topServers[0]?.[1] || 1;
+  document.getElementById('ev-servers').innerHTML = topServers.length
+    ? topServers.map(([s,count]) => hBar(s, count, maxSrv, 'var(--green)')).join('')
+    : '<div style="color:var(--muted);font-family:var(--mono);font-size:11px">No server load events yet</div>';
+}
+
+// Event type badge colors
+const EV_COLORS = {
+  movie_click:      { bg: 'rgba(77,159,255,0.12)', color: 'var(--blue)',  icon: '🎬' },
+  watch_started:    { bg: 'rgba(0,229,160,0.12)',  color: 'var(--green)', icon: '▶️' },
+  watch_ended:      { bg: 'rgba(0,229,160,0.08)',  color: 'var(--green2)',icon: '⏹️' },
+  server_loaded:    { bg: 'rgba(0,229,160,0.08)',  color: 'var(--green2)',icon: '✅' },
+  server_switch:    { bg: 'rgba(77,159,255,0.08)', color: 'var(--blue)',  icon: '🔀' },
+  search:           { bg: 'rgba(201,168,76,0.1)',  color: 'var(--gold)',  icon: '🔍' },
+  gate_shown:       { bg: 'rgba(255,77,77,0.08)',  color: 'var(--red)',   icon: '🚪' },
+  gate_converted:   { bg: 'rgba(0,229,160,0.15)',  color: 'var(--green)', icon: '✉️' },
+  gate_dismissed:   { bg: 'rgba(255,77,77,0.12)',  color: 'var(--red)',   icon: '❌' },
+  watchlist_updated:{ bg: 'rgba(201,168,76,0.1)',  color: 'var(--gold)',  icon: '💖' },
+  rage_click:       { bg: 'rgba(255,77,77,0.15)',  color: 'var(--red)',   icon: '😤' },
+  heatmap_batch:    { bg: 'rgba(77,159,255,0.06)', color: 'var(--muted2)',icon: '🗺️' },
+  vpn_tor_detected: { bg: 'rgba(255,77,77,0.18)',  color: 'var(--red)',   icon: '🕵️' },
+  review_posted:    { bg: 'rgba(201,168,76,0.1)',  color: 'var(--gold)',  icon: '⭐' },
+};
+
+function renderEvents(highlightFirst = false) {
+  renderEventStats();
+  const typeFilter   = document.getElementById('ev-filter-type')?.value || '';
+  const searchFilter = (document.getElementById('ev-filter-search')?.value || '').toLowerCase();
+
+  let filtered = allEvents.filter(e => {
+    if (typeFilter && e.event !== typeFilter) return false;
+    if (searchFilter) {
+      const text = [e.event, e.visit_id, JSON.stringify(e.data)].join(' ').toLowerCase();
+      if (!text.includes(searchFilter)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('ev-count-badge').textContent = filtered.length + ' events';
+
+  const tbody = document.getElementById('ev-body');
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">No events match your filter.</div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.slice(0, 300).map((e, i) => {
+    const style = EV_COLORS[e.event] || { bg: 'rgba(255,255,255,0.04)', color: 'var(--muted2)', icon: '📌' };
+    const dataPreview = formatEventData(e.event, e.data);
+    const shortVisitId = (e.visit_id || '—').slice(0, 10) + '…';
+    return `<tr class="${highlightFirst && i === 0 ? 'row-new' : ''}" style="cursor:default">
+      <td style="color:var(--muted)">${String(i+1).padStart(3,'0')}</td>
+      <td style="color:var(--muted2);white-space:nowrap">${fmt(e.ts)}</td>
+      <td>
+        <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:4px;background:${style.bg};color:${style.color};font-family:var(--mono);font-size:10px;letter-spacing:0.06em;white-space:nowrap">
+          ${style.icon} ${esc(e.event)}
+        </span>
+      </td>
+      <td style="color:var(--muted);font-family:var(--mono);font-size:10px" title="${esc(e.visit_id)}">${shortVisitId}</td>
+      <td style="color:var(--muted2);font-family:var(--mono);font-size:10px;max-width:360px;word-break:break-word">${dataPreview}</td>
+    </tr>`;
+  }).join('');
+}
+
+function formatEventData(eventType, data) {
+  if (!data) return '<span style="color:var(--muted)">—</span>';
+  try {
+    // Format known event types in a human-readable way
+    switch(eventType) {
+      case 'movie_click':
+      case 'watch_started':
+        return `<span style="color:var(--text)">${esc(data.movie_title || data.movie_id)}</span> <span style="color:var(--muted)">${esc(data.content_type || 'movie')} · ${esc(data.server || '')}</span>`;
+      case 'watch_ended':
+        return `<span style="color:var(--text)">${esc(data.movie_title || data.movie_id)}</span> <span style="color:var(--muted2)">watched ${data.seconds_watched}s via ${esc(data.server_used || '')}</span>`;
+      case 'server_loaded':
+        return `<span style="color:var(--green)">${esc(data.server)}</span> <span style="color:var(--muted2)">${data.load_ms}ms · ${esc(data.movie_id)}</span>`;
+      case 'server_switch':
+        return `<span style="color:var(--blue)">${esc(data.server)}</span> <span style="color:var(--muted2)">for ${esc(data.movie_id)}</span>`;
+      case 'search':
+        return `<span style="color:var(--gold)">"${esc(data.query)}"</span> <span style="color:var(--muted2)">${data.result_count ?? '?'} results</span>`;
+      case 'gate_shown':
+        return `<span style="color:var(--text)">${esc(data.movie_title || '')}</span> <span style="color:var(--muted)">${esc(data.content_type || '')}</span>`;
+      case 'gate_converted':
+        return `<span style="color:var(--green)">@${esc(data.email_domain)}</span> <span style="color:var(--muted2)">${esc(data.movie_title || '')} · ${data.time_to_convert_s ?? '?'}s to convert</span>`;
+      case 'gate_dismissed':
+        return `<span style="color:var(--red)">${esc(data.movie_title || '')}</span> <span style="color:var(--muted2)">spent ${data.seconds_spent}s · typed: ${data.had_typed ? 'yes' : 'no'}</span>`;
+      case 'watchlist_updated':
+        return `<span style="color:var(--gold)">${esc(data.action === 'add' ? '+ Added' : '− Removed')}</span> <span style="color:var(--text)">${esc(data.movie_title || data.movie_id)}</span> <span style="color:var(--muted2)">(list: ${data.watchlist_size})</span>`;
+      case 'rage_click':
+        return `<span style="color:var(--red)">${data.count}x clicks</span> <span style="color:var(--muted2)">at (${data.x}%, ${data.y}px) scroll:${data.scroll_y}px</span>`;
+      case 'heatmap_batch':
+        return `<span style="color:var(--muted2)">${(data.clicks||[]).length} click coords recorded</span>`;
+      case 'vpn_tor_detected':
+        return `<span style="color:var(--red)">${data.is_tor ? '🧅 TOR' : ''} ${data.is_proxy ? '🔒 PROXY' : ''} ${data.is_vpn ? '🌐 VPN' : ''}</span> <span style="color:var(--muted2)">${esc(data.ip)}</span>`;
+      case 'review_posted':
+        return `<span style="color:var(--gold)">${'⭐'.repeat(data.stars || 0)}</span> <span style="color:var(--text)">${esc(data.movie_title)}</span>`;
+      default:
+        // Fallback: compact JSON preview
+        const str = JSON.stringify(data);
+        return `<span style="color:var(--muted2)">${esc(str.length > 120 ? str.slice(0, 120) + '…' : str)}</span>`;
+    }
+  } catch(_) {
+    return '<span style="color:var(--muted)">—</span>';
+  }
+}
+
+function exportEvents() {
+  const blob = new Blob([JSON.stringify(allEvents, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `flixnow-events-${today()}.json`; a.click();
+  toast('📥 Events exported');
 }
 </script>
 </body>
