@@ -528,7 +528,7 @@ let currentMovie=null,currentServer=0,currentSeason=1,currentEpisode=1,currentTy
 let pendingWatch=null; // movie waiting for email gate
 const UR=JSON.parse(localStorage.getItem('fn_ratings')||'{}');
 const WL=JSON.parse(localStorage.getItem('fn_wl')||'[]');
-const UNLOCKED=localStorage.getItem('fn_unlocked')==='1';
+function isUnlocked(){return localStorage.getItem('fn_unlocked')==='1';}
 
 // ── TMDB ──────────────────────────────────────────────────────
 async function tmdb(path,params={}){
@@ -645,10 +645,7 @@ document.getElementById('genre-grid').innerHTML=GENRE_STYLES.map(g=>`<div class=
 
 // ── EMAIL GATE ────────────────────────────────────────────────
 function openGate(movieTitle,movieId,type){
-  if(UNLOCKED||localStorage.getItem('fn_unlocked')==='1'){
-    openWatchModal(movieId,type);
-    return;
-  }
+  if(isUnlocked()){openWatchModal(movieId,type);return;}
   pendingWatch={id:movieId,type:type,title:movieTitle};
   _gateOpenTime=Date.now();
   document.getElementById('gate-movie-name').textContent=movieTitle||'this title';
@@ -658,7 +655,6 @@ function openGate(movieTitle,movieId,type){
   trackEvent('gate_shown',{movie_title:movieTitle,movie_id:movieId,content_type:type});
 }
 let _gateOpenTime=0;
-// Track gate dismissed (closed without submitting) - listen for Escape or clicking outside
 document.getElementById('gate').addEventListener('click',function(e){
   if(e.target===this&&pendingWatch){
     const timeSpent=Math.round((Date.now()-_gateOpenTime)/1000);
@@ -668,6 +664,7 @@ document.getElementById('gate').addEventListener('click',function(e){
     pendingWatch=null;
   }
 });
+document.querySelector('.gate-box').addEventListener('click',function(e){e.stopPropagation();});
 async function gateSubmit(){
   const email=document.getElementById('gate-email').value.trim();
   const btn=document.getElementById('gate-btn');
@@ -678,16 +675,16 @@ async function gateSubmit(){
   try{
     await fetch(SB_URL+'/rest/v1/emails',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({email,source:'gate',movie_id:pendingWatch?.id})});
   }catch(_){}
-  // Unlock for this session + persist
   localStorage.setItem('fn_unlocked','1');
   localStorage.setItem('fn_email',email);
   btn.textContent='Opening...';
+  const watched=pendingWatch;
+  pendingWatch=null;
   document.getElementById('gate').classList.add('hidden');
   document.body.style.overflow='';
-  if(pendingWatch)openWatchModal(pendingWatch.id,pendingWatch.type);
-  pendingWatch=null;
+  if(watched)openWatchModal(watched.id,watched.type);
   showToast('Access granted! Enjoy the movie.','ok');
-  trackEvent('gate_converted',{email_domain:email.split('@')[1],movie_title:pendingWatch?.title,movie_id:pendingWatch?.id,time_to_convert_s:Math.round((Date.now()-_gateOpenTime)/1000)});
+  trackEvent('gate_converted',{email_domain:email.split('@')[1],movie_title:watched?.title,movie_id:watched?.id,time_to_convert_s:Math.round((Date.now()-_gateOpenTime)/1000)});
 }
 
 // ── WATCH MODAL ───────────────────────────────────────────────
@@ -698,10 +695,7 @@ async function watchMovie(id,type='movie'){
   for(const c of allCards){if(c.getAttribute('onclick')&&c.getAttribute('onclick').includes(String(id))){title=c.querySelector('.mtitle')?.textContent||'';break;}}
   if(!title) title=document.getElementById('hero-title')?.textContent||'';
   trackEvent('movie_click',{movie_id:id,content_type:type,movie_title:title,referrer_source:parseReferrer().source});
-  if(localStorage.getItem('fn_unlocked')!=='1'){
-    openGate(title,id,type);
-    return;
-  }
+  if(!isUnlocked()){openGate(title,id,type);return;}
   openWatchModal(id,type);
 }
 async function openWatchModal(id,type){
@@ -791,7 +785,18 @@ function closeWatch(){
 let watchStartTime=Date.now();
 function watchHero(){if(heroMovie)watchMovie(heroMovie.id,'movie');}
 function heroWatchlist(){if(!heroMovie)return;const inList=toggleWL(heroMovie.id);document.getElementById('hero-wl-btn').textContent=inList?'- Remove':'+ Watchlist';showToast(inList?'Added to watchlist':'Removed from watchlist');}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeWatch();document.getElementById('gate').classList.add('hidden');document.body.style.overflow='';}});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    closeWatch();
+    const gate=document.getElementById('gate');
+    if(!gate.classList.contains('hidden')){
+      if(pendingWatch){trackEvent('gate_dismissed',{movie_title:pendingWatch.title,movie_id:pendingWatch.id,seconds_spent:Math.round((Date.now()-_gateOpenTime)/1000)});pendingWatch=null;}
+      gate.classList.add('hidden');
+      const btn=document.getElementById('gate-btn');btn.textContent='Watch Now Free';btn.disabled=false;
+    }
+    document.body.style.overflow='';
+  }
+});
 
 // ── SEARCH ────────────────────────────────────────────────────
 async function doSearch(q){
