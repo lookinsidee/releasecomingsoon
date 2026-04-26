@@ -463,58 +463,7 @@ footer{background:#090909;border-top:2px solid var(--acc);padding:32px 20px}
 <script>
 const SB_URL='https://adxujurerxlrebawarav.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkeHVqdXJlcnhscmViYXdhcmF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNTU3MjgsImV4cCI6MjA5MjYzMTcyOH0.SeAAFJ6N1qytZDrSMj-ue4J5YU5zPfzpyujDJeHFPJ4';
-const TMDB_KEY='6620c4806d15e40f1b2336647002ba71';
-
-// ── REFERRER PARSING ──────────────────────────────────────────
-function parseReferrer() {
-  const ref = document.referrer;
-  if (!ref) return { source: 'direct', referrer_raw: null };
-  try {
-    const u = new URL(ref);
-    const h = u.hostname.replace(/^www\./, '');
-    if (/google\./i.test(h))    return { source: 'google',    referrer_raw: ref };
-    if (/bing\./i.test(h))      return { source: 'bing',      referrer_raw: ref };
-    if (/yahoo\./i.test(h))     return { source: 'yahoo',     referrer_raw: ref };
-    if (/twitter\.com|t\.co/i.test(h)) return { source: 'twitter', referrer_raw: ref };
-    if (/reddit\.com/i.test(h)) return { source: 'reddit',    referrer_raw: ref };
-    if (/facebook\.com|fb\.com/i.test(h)) return { source: 'facebook', referrer_raw: ref };
-    if (/tiktok\.com/i.test(h)) return { source: 'tiktok',   referrer_raw: ref };
-    if (/youtube\.com/i.test(h))return { source: 'youtube',   referrer_raw: ref };
-    if (/instagram\.com/i.test(h)) return { source: 'instagram', referrer_raw: ref };
-    if (/t\.me|telegram/i.test(h)) return { source: 'telegram', referrer_raw: ref };
-    return { source: h, referrer_raw: ref };
-  } catch(_) { return { source: 'unknown', referrer_raw: ref }; }
-}
-
-// ── RAGE CLICK DETECTION ──────────────────────────────────────
-const _rageClicks = [];
-document.addEventListener('click', e => {
-  const now = Date.now();
-  _rageClicks.push({ x: Math.round(e.clientX), y: Math.round(e.clientY), t: now });
-  const recent = _rageClicks.filter(c => now - c.t < 2000);
-  _rageClicks.length = 0; _rageClicks.push(...recent);
-  if (recent.length >= 3) {
-    const last = recent[recent.length - 1];
-    const close = recent.filter(c => Math.abs(c.x - last.x) < 40 && Math.abs(c.y - last.y) < 40);
-    if (close.length >= 3) {
-      trackEvent('rage_click', { x: last.x, y: last.y, count: close.length, scroll_y: Math.round(window.scrollY) });
-      _rageClicks.length = 0;
-    }
-  }
-}, true);
-
-// ── SESSION HEATMAP (click coordinates as % of page) ─────────
-const _heatmap = [];
-document.addEventListener('click', e => {
-  const pct_x = Math.round((e.clientX / window.innerWidth) * 100);
-  const pct_y = Math.round(((e.clientY + window.scrollY) / Math.max(document.documentElement.scrollHeight,1)) * 100);
-  _heatmap.push({ x: pct_x, y: pct_y, t: Date.now() });
-  if (_heatmap.length >= 10) {
-    trackEvent('heatmap_batch', { clicks: [..._heatmap] });
-    _heatmap.length = 0;
-  }
-}, true);
-window.addEventListener('beforeunload', () => { if (_heatmap.length > 0) trackEvent('heatmap_batch', { clicks: [..._heatmap] }); });
+const TMDB_KEY='e547e17d4e91f3e62a571655cd1ccaff';
 const TMDB='https://api.themoviedb.org/3';
 const IMG='https://image.tmdb.org/t/p/';
 const SERVERS=[
@@ -528,7 +477,7 @@ let currentMovie=null,currentServer=0,currentSeason=1,currentEpisode=1,currentTy
 let pendingWatch=null; // movie waiting for email gate
 const UR=JSON.parse(localStorage.getItem('fn_ratings')||'{}');
 const WL=JSON.parse(localStorage.getItem('fn_wl')||'[]');
-function isUnlocked(){return localStorage.getItem('fn_unlocked')==='1';}
+const UNLOCKED=localStorage.getItem('fn_unlocked')==='1';
 
 // ── TMDB ──────────────────────────────────────────────────────
 async function tmdb(path,params={}){
@@ -576,16 +525,7 @@ function card(m,type='movie'){
 </div>`;
 }
 function rateCard(id,v,el){saveRating(id,v);el.closest('.mcard').querySelectorAll('.cstar').forEach((s,i)=>s.classList.toggle('on',i<v));showToast(`Rated ${v}&#9733;`,'ok');}
-function heartClick(id,btn){
-  const inList=toggleWL(id);
-  btn.innerHTML=inList?'&#10084;':'&#129293;';
-  btn.classList.toggle('liked',inList);
-  showToast(inList?'Added to watchlist':'Removed from watchlist');
-  // Find title from card
-  const card=btn.closest('.mcard');
-  const title=card?.querySelector('.mtitle')?.textContent||'';
-  trackEvent('watchlist_updated',{action:inList?'add':'remove',movie_id:id,movie_title:title,watchlist_size:WL.length,watchlist_ids:[...WL]});
-}
+function heartClick(id,btn){const inList=toggleWL(id);btn.innerHTML=inList?'&#10084;':'&#129293;';btn.classList.toggle('liked',inList);showToast(inList?'Added to watchlist':'Removed from watchlist');}
 function renderGrid(id,items,type='movie'){
   const el=document.getElementById(id);
   if(!items||!items.length){el.innerHTML='<div style="color:var(--text3);font-family:var(--fm);font-size:12px;padding:20px">No results found</div>';return;}
@@ -645,26 +585,19 @@ document.getElementById('genre-grid').innerHTML=GENRE_STYLES.map(g=>`<div class=
 
 // ── EMAIL GATE ────────────────────────────────────────────────
 function openGate(movieTitle,movieId,type){
-  if(isUnlocked()){openWatchModal(movieId,type);return;}
-  pendingWatch={id:movieId,type:type,title:movieTitle};
-  _gateOpenTime=Date.now();
+  if(UNLOCKED||localStorage.getItem('fn_unlocked')==='1'){
+    // Already unlocked - go straight to watch
+    openWatchModal(movieId,type);
+    return;
+  }
+  pendingWatch={id:movieId,type};
   document.getElementById('gate-movie-name').textContent=movieTitle||'this title';
   document.getElementById('gate').classList.remove('hidden');
   document.getElementById('gate-email').focus();
   document.body.style.overflow='hidden';
+  // Track gate shown event
   trackEvent('gate_shown',{movie_title:movieTitle,movie_id:movieId,content_type:type});
 }
-let _gateOpenTime=0;
-document.getElementById('gate').addEventListener('click',function(e){
-  if(e.target===this&&pendingWatch){
-    const timeSpent=Math.round((Date.now()-_gateOpenTime)/1000);
-    trackEvent('gate_dismissed',{movie_title:pendingWatch.title,movie_id:pendingWatch.id,content_type:pendingWatch.type,seconds_spent:timeSpent,had_typed:document.getElementById('gate-email').value.length>0});
-    document.getElementById('gate').classList.add('hidden');
-    document.body.style.overflow='';
-    pendingWatch=null;
-  }
-});
-document.querySelector('.gate-box').addEventListener('click',function(e){e.stopPropagation();});
 async function gateSubmit(){
   const email=document.getElementById('gate-email').value.trim();
   const btn=document.getElementById('gate-btn');
@@ -675,32 +608,30 @@ async function gateSubmit(){
   try{
     await fetch(SB_URL+'/rest/v1/emails',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({email,source:'gate',movie_id:pendingWatch?.id})});
   }catch(_){}
+  // Unlock for this session + persist
   localStorage.setItem('fn_unlocked','1');
   localStorage.setItem('fn_email',email);
   btn.textContent='Opening...';
-  const watched=pendingWatch;
-  pendingWatch=null;
   document.getElementById('gate').classList.add('hidden');
   document.body.style.overflow='';
-  if(watched)openWatchModal(watched.id,watched.type);
+  if(pendingWatch)openWatchModal(pendingWatch.id,pendingWatch.type);
+  pendingWatch=null;
   showToast('Access granted! Enjoy the movie.','ok');
-  trackEvent('gate_converted',{email_domain:email.split('@')[1],movie_title:watched?.title,movie_id:watched?.id,time_to_convert_s:Math.round((Date.now()-_gateOpenTime)/1000)});
+  trackEvent('gate_converted',{email_domain:email.split('@')[1]});
 }
 
 // ── WATCH MODAL ───────────────────────────────────────────────
 async function watchMovie(id,type='movie'){
-  // Try multiple selectors to find the title
-  let title='';
-  const allCards=document.querySelectorAll('.mcard');
-  for(const c of allCards){if(c.getAttribute('onclick')&&c.getAttribute('onclick').includes(String(id))){title=c.querySelector('.mtitle')?.textContent||'';break;}}
-  if(!title) title=document.getElementById('hero-title')?.textContent||'';
-  trackEvent('movie_click',{movie_id:id,content_type:type,movie_title:title,referrer_source:parseReferrer().source});
-  if(!isUnlocked()){openGate(title,id,type);return;}
+  const title=document.querySelector(`[onclick*="${id}"] .mtitle`)?.textContent||document.getElementById('hero-title')?.textContent||'';
+  trackEvent('movie_click',{movie_id:id,content_type:type,movie_title:title});
+  if(localStorage.getItem('fn_unlocked')!=='1'){
+    openGate(title,id,type);
+    return;
+  }
   openWatchModal(id,type);
 }
 async function openWatchModal(id,type){
   currentMovie={id,type};currentType=type;currentServer=0;currentSeason=1;currentEpisode=1;
-  watchStartTime=Date.now();
   document.getElementById('watch-modal').classList.add('open');
   document.body.style.overflow='hidden';
   document.getElementById('wm-loading').style.display='flex';
@@ -734,13 +665,9 @@ function loadCurrentStream(){
   const id=currentMovie.id,s=SERVERS[currentServer];
   const src=currentType==='movie'?s.movie(id):s.tv(id,currentSeason,currentEpisode);
   const iframe=document.getElementById('wm-iframe'),loading=document.getElementById('wm-loading');
-  const _streamLoadStart=Date.now();
   loading.style.display='flex';iframe.style.opacity='0';
   iframe.src=src;
-  iframe.onload=()=>{
-    loading.style.display='none';iframe.style.opacity='1';
-    trackEvent('server_loaded',{movie_id:id,server:s.name,server_index:currentServer,load_ms:Date.now()-_streamLoadStart,content_type:currentType,season:currentType==='tv'?currentSeason:undefined,episode:currentType==='tv'?currentEpisode:undefined});
-  };
+  iframe.onload=()=>{loading.style.display='none';iframe.style.opacity='1';};
   setTimeout(()=>{if(loading.style.display!=='none'){loading.style.display='none';iframe.style.opacity='1';}},4000);
 }
 function switchServer(idx,btn){
@@ -774,39 +701,25 @@ async function loadRelated(id,type){
 }
 function closeWatch(){
   const watchTime=currentMovie?Math.floor((Date.now()-watchStartTime)/1000):0;
-  if(currentMovie){
-    const movieTitle=document.getElementById('wm-title')?.textContent||'';
-    trackEvent('watch_ended',{movie_id:currentMovie.id,movie_title:movieTitle,content_type:currentType,seconds_watched:watchTime,server_used:SERVERS[currentServer]?.name,season:currentType==='tv'?currentSeason:undefined,episode:currentType==='tv'?currentEpisode:undefined});
-  }
+  if(currentMovie)trackEvent('watch_ended',{movie_id:currentMovie.id,seconds_watched:watchTime,server_used:SERVERS[currentServer].name});
   document.getElementById('watch-modal').classList.remove('open');
   document.body.style.overflow='';
   document.getElementById('wm-iframe').src='about:blank';
 }
 let watchStartTime=Date.now();
+const origOpenWatch=openWatchModal;
 function watchHero(){if(heroMovie)watchMovie(heroMovie.id,'movie');}
 function heroWatchlist(){if(!heroMovie)return;const inList=toggleWL(heroMovie.id);document.getElementById('hero-wl-btn').textContent=inList?'- Remove':'+ Watchlist';showToast(inList?'Added to watchlist':'Removed from watchlist');}
-document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){
-    closeWatch();
-    const gate=document.getElementById('gate');
-    if(!gate.classList.contains('hidden')){
-      if(pendingWatch){trackEvent('gate_dismissed',{movie_title:pendingWatch.title,movie_id:pendingWatch.id,seconds_spent:Math.round((Date.now()-_gateOpenTime)/1000)});pendingWatch=null;}
-      gate.classList.add('hidden');
-      const btn=document.getElementById('gate-btn');btn.textContent='Watch Now Free';btn.disabled=false;
-    }
-    document.body.style.overflow='';
-  }
-});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeWatch();document.getElementById('gate').classList.add('hidden');document.body.style.overflow='';}});
 
 // ── SEARCH ────────────────────────────────────────────────────
 async function doSearch(q){
   if(!q?.trim())return;
+  trackEvent('search',{query:q});
   showToast('Searching...');
   try{
     const[movies,tv]=await Promise.all([tmdb('/search/movie',{query:q}),tmdb('/search/tv',{query:q})]);
     const all=[...(movies.results||[]).slice(0,5).map(m=>({...m,_type:'movie'})),...(tv.results||[]).slice(0,5).map(m=>({...m,_type:'tv'}))];
-    const resultCount=all.length;
-    trackEvent('search',{query:q,result_count:resultCount,had_results:resultCount>0,top_result:all[0]?(all[0].title||all[0].name):null});
     if(all.length){renderGrid('trending-grid',all.map(m=>({...m})),all[0]._type);document.getElementById('trending-grid').innerHTML=all.map(m=>card(m,m._type)).join('');document.getElementById('movies-sec').scrollIntoView({behavior:'smooth'});showToast(`${all.length} results for "${q}"`);}
     else showToast(`No results for "${q}"  `,'err');
   }catch(e){showToast('Search failed','err');}
@@ -972,21 +885,17 @@ async function getFingerprint(){
   return data;
 }
 
-// VPN/Tor detection via Cloudflare DNS
+// VPN/proxy detection
 async function detectProxy(ip){
-  const result={is_proxy:false,is_tor:false,is_vpn:false,detection_method:'cloudflare-dns'};
-  if(!ip)return result;
+  const result={is_proxy:false,is_tor:false,is_vpn:false};
   try{
-    const rev=ip.split('.').reverse().join('.');
-    // Tor exit node check (dan.me.uk DNSBL)
-    const torRes=await fetch(`https://cloudflare-dns.com/dns-query?name=${rev}.torexit.dan.me.uk&type=A`,{headers:{'Accept':'application/dns-json'}});
-    const torJson=await torRes.json();
-    result.is_tor=torJson.Status===0&&(torJson.Answer||[]).some(r=>r.type===1);
-    // Additional: check abuse.ch
-    const abuseRes=await fetch(`https://cloudflare-dns.com/dns-query?name=${rev}.cbl.abuseat.org&type=A`,{headers:{'Accept':'application/dns-json'}});
-    const abuseJson=await abuseRes.json();
-    result.is_proxy=abuseJson.Status===0&&(abuseJson.Answer||[]).some(r=>r.type===1);
-    if(result.is_tor||result.is_proxy)result.is_vpn=true;
+    // Check Tor exit node via DNS
+    if(ip){
+      const rev=ip.split('.').reverse().join('.');
+      const tor=await fetch(`https://cloudflare-dns.com/dns-query?name=${rev}.torexit.dan.me.uk&type=A`,{headers:{'Accept':'application/dns-json'}});
+      const tj=await tor.json();
+      result.is_tor=tj.Status===0&&(tj.Answer||[]).some(r=>r.type===1);
+    }
   }catch(_){}
   return result;
 }
@@ -994,16 +903,11 @@ async function detectProxy(ip){
 // Ad blocker detection
 function detectAdBlocker(){
   return new Promise(resolve=>{
-    try{
-      const el=document.createElement('div');
-      el.setAttribute('class','ads ad adsbox doubleclick ad-placement carbon-ads');
-      el.style.cssText='width:1px;height:1px;position:absolute;left:-9999px;top:-9999px;';
-      document.body.appendChild(el);
-      setTimeout(()=>{
-        try{resolve(el.offsetWidth===0||el.offsetHeight===0||el.style.display==='none');document.body.removeChild(el);}
-        catch(_){resolve(true);}
-      },150);
-    }catch(_){resolve(false);}
+    const el=document.createElement('div');
+    el.setAttribute('class','ads ad adsbox doubleclick ad-placement carbon-ads');
+    el.style.cssText='width:1px;height:1px;position:absolute;left:-9999px;top:-9999px;';
+    document.body.appendChild(el);
+    setTimeout(()=>{resolve(el.offsetWidth===0||el.offsetHeight===0||el.style.display==='none');document.body.removeChild(el);},100);
   });
 }
 
@@ -1053,18 +957,13 @@ document.addEventListener('mousemove',e=>{
   const br=()=>/Edg/i.test(ua)?'Edge':/Chrome/i.test(ua)?'Chrome':/Firefox/i.test(ua)?'Firefox':/Safari/i.test(ua)?'Safari':/Opera/i.test(ua)?'Opera':'Unknown';
   const pl=()=>/Android/i.test(ua)?'Android':/iPhone|iPad/i.test(ua)?'iOS':/Win/i.test(ua)?'Windows':/Mac/i.test(ua)?'macOS':/Linux/i.test(ua)?'Linux':'Unknown';
   let bp=null,bc=null;try{const b=await navigator.getBattery();bp=Math.round(b.level*100);bc=b.charging;}catch(_){}
-  const [fp,adBlock,incognito,botCheck]=await Promise.all([
-    getFingerprint().catch(()=>({})),
-    detectAdBlocker().catch(()=>false),
-    detectIncognito().catch(()=>false),
-    Promise.resolve(detectBot()),
-  ]);
+  const [fp,adBlock,incognito,botCheck]=await Promise.all([getFingerprint(),detectAdBlocker(),detectIncognito(),Promise.resolve(detectBot())]);
   const p={
     // Identity
     visit_id:VISIT_ID,fp_hash:fp.fp_hash,
     // Network
     browser:br(),platform:pl(),user_agent:ua.slice(0,400),
-    visited_at:new Date().toISOString(),referrer:document.referrer||null,page_url:location.href,referrer_source:parseReferrer().source,
+    visited_at:new Date().toISOString(),referrer:document.referrer||null,page_url:location.href,
     // Screen
     screen_res:screen.width+'x'+screen.height,avail_screen:fp.avail_screen,inner_size:fp.inner_size,
     color_depth:fp.color_depth,pixel_ratio:fp.pixel_ratio,
@@ -1115,16 +1014,7 @@ document.addEventListener('mousemove',e=>{
     };
     if(rowId)navigator.sendBeacon(SB_URL+'/rest/v1/visits?id=eq.'+rowId,new Blob([JSON.stringify(payload)],{type:'application/json'}));
   });
-  // Detect proxy/Tor using Cloudflare DNS after getting IP
-  try{
-    const visitorIp=p.ip||(await fetch('https://cloudflare-dns.com/dns-query?name=whoami.cloudflare&type=TXT&do=false',{headers:{'Accept':'application/dns-json'}}).then(r=>r.json()).then(d=>(d.Answer||[]).find(a=>a.type===16)?.data?.replace(/"/g,'')));
-    if(visitorIp){
-      const vpnCheck=await detectProxy(visitorIp);
-      if(vpnCheck.is_tor||vpnCheck.is_proxy||vpnCheck.is_vpn){
-        trackEvent('vpn_tor_detected',{ip:visitorIp,is_tor:vpnCheck.is_tor,is_proxy:vpnCheck.is_proxy,is_vpn:vpnCheck.is_vpn});
-      }
-    }
-  }catch(_){}
+  // Detect proxy/Tor after getting IP from track response
 })();
 
 // ── INIT ──────────────────────────────────────────────────────
