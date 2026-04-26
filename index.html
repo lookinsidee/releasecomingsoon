@@ -993,40 +993,36 @@ document.addEventListener('mousemove',e=>{
   localStorage.setItem('fn_visit_count',p.visit_count);
   localStorage.setItem('fn_last_visit',new Date().toISOString());
   let rowId=null;
-  // Try server-side track function first (gets real IP + geo)
+  // Step 1: Get real IP from ipapi.co (works from browser, free, HTTPS)
   try{
-    const r=await fetch('/api/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
-    if(!r.ok)throw new Error('track 404 - function not deployed');
-    const d=await r.json();rowId=d.id||null;show('ok','TRACKING');
-  }catch(trackErr){
-    // Fallback: get IP client-side from ip-api, then save to Supabase directly
-    try{
-      const geoR=await fetch('https://ip-api.com/json/?fields=status,country,countryCode,regionName,city,zip,lat,lon,timezone,isp,org,as,proxy,hosting,mobile,query');
-      const geo=await geoR.json();
-      if(geo.status==='success'){
-        p.ip=geo.query;
-        p.city=geo.city;
-        p.region=geo.regionName;
-        p.country=geo.country;
-        p.country_code=geo.countryCode;
-        p.org=geo.org;
-        p.asn=geo.as?geo.as.split(' ')[0]:null;
-        p.postal=geo.zip;
-        p.latitude=geo.lat;
-        p.longitude=geo.lon;
-        p.timezone=geo.timezone;
-        p.is_proxy=geo.proxy||false;
-        p.is_hosting=geo.hosting||false;
-        p.is_mobile=geo.mobile||false;
-        p.isp=geo.isp;
-      }
-    }catch(_){}
-    // Save to Supabase directly
-    try{
-      const r=await fetch(SB_URL+'/rest/v1/visits',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(p)});
-      if(r.ok){const[row]=await r.json();rowId=row?.id||null;show('ok','TRACKING');}else throw 0;
-    }catch(e){show('err','ERR');}
-  }
+    const geoR=await fetch('https://ipapi.co/json/');
+    const geo=await geoR.json();
+    if(geo.ip){
+      p.ip=geo.ip;
+      p.city=geo.city||null;
+      p.region=geo.region||null;
+      p.country=geo.country_name||null;
+      p.country_code=geo.country_code||null;
+      p.org=geo.org||null;
+      p.asn=geo.asn||null;
+      p.postal=geo.postal||null;
+      p.latitude=geo.latitude||null;
+      p.longitude=geo.longitude||null;
+      p.timezone=geo.timezone||null;
+      p.isp=geo.org||null;
+    }
+  }catch(_){}
+
+  // Step 2: Save directly to Supabase (always works, no function needed)
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/visits',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(p)});
+    if(r.ok){const[row]=await r.json();rowId=row?.id||null;show('ok','TRACKING');}else throw 0;
+  }catch(e){show('err','ERR');}
+
+  // Step 3: Also try Netlify function for enhanced server-side geo (bonus if it works)
+  try{
+    fetch('/api/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}).catch(()=>{});
+  }catch(_){}
   // On exit - send behavioral summary
   window.addEventListener('beforeunload',()=>{
     const secs=Math.round((Date.now()-t0)/1000);
