@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReelHaus Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #050508;
+  --dark:    #080b10;
+  --surface: #0d1117;
+  --surface2:#111820;
+  --surface3:#161e28;
+  --border:  rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.12);
+  --gold:    #c9a84c;
+  --gold2:   #e8c97a;
+  --green:   #00e5a0;
+  --green2:  #00b37e;
+  --red:     #ff4d4d;
+  --red2:    #cc3333;
+  --blue:    #4d9fff;
+  --text:    #e8edf2;
+  --muted:   #4a5568;
+  --muted2:  #7a8899;
+  --sans:    'Syne', sans-serif;
+  --mono:    'JetBrains Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Grid bg */
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(201,168,76,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,168,76,0.015) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none; z-index: 0;
+}
+
+/* Gold top bar */
+body::after {
+  content: ''; position: fixed; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--gold) 50%, transparent 100%);
+  z-index: 200; opacity: 0.6;
+}
+
+/* ── LOCK SCREEN ── */
+#lock-screen {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  z-index: 500;
+  display: flex; align-items: center; justify-content: center;
+}
+.lock-box {
+  background: var(--surface);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 12px;
+  padding: 40px 44px;
+  width: 100%; max-width: 400px;
+  text-align: center;
+}
+.lock-logo {
+  font-family: var(--sans);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  color: var(--text);
+  margin-bottom: 28px;
+  text-transform: uppercase;
+}
+.lock-logo em { color: var(--gold); font-style: normal; }
+.lock-title { font-family: var(--mono); font-size: 11px; color: var(--gold); letter-spacing: 0.15em; margin-bottom: 6px; text-transform: uppercase; }
+.lock-sub { font-size: 13px; color: var(--muted2); margin-bottom: 28px; }
+.field-label { font-family: var(--mono); font-size: 10px; color: var(--muted2); letter-spacing: 0.1em; text-transform: uppercase; text-align: left; margin-bottom: 5px; }
+.lock-input {
+  width: 100%; background: var(--surface2);
+  border: 1px solid var(--border2); border-radius: 6px;
+  padding: 12px 16px; color: var(--text);
+  font-family: var(--mono); font-size: 13px; outline: none;
+  margin-bottom: 14px; transition: border-color 0.2s;
+}
+.lock-input:focus { border-color: rgba(201,168,76,0.5); }
+.lock-btn {
+  width: 100%; padding: 14px;
+  background: var(--gold); color: #050508;
+  border: none; border-radius: 6px;
+  font-family: var(--sans); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  cursor: pointer; transition: all 0.2s; margin-top: 4px;
+}
+.lock-btn:hover { background: var(--gold2); }
+.lock-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.lock-error { font-size: 11px; color: var(--red); margin-top: 12px; display: none; font-family: var(--mono); }
+.lock-loading { font-size: 11px; color: var(--muted2); margin-top: 12px; display: none; font-family: var(--mono); }
+.lock-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+.lock-footer { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.05em; }
+.lock-footer em { color: var(--green2); font-style: normal; }
+
+/* ── LAYOUT ── */
+.app { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+
+/* SIDEBAR */
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--dark);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 28px 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.sidebar-logo {
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  color: var(--text);
+  text-transform: uppercase;
+  padding: 0 24px 28px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+.sidebar-logo em { color: var(--gold); font-style: normal; }
+.sidebar-logo span { display: block; font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.1em; font-weight: 400; margin-top: 4px; }
+
+.nav-section { padding: 0 16px; margin-bottom: 24px; }
+.nav-label { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; padding: 0 8px; margin-bottom: 6px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted2);
+  transition: all 0.15s;
+  margin-bottom: 2px;
+  border: none; background: none; width: 100%; text-align: left;
+}
+.nav-item:hover { background: var(--surface); color: var(--text); }
+.nav-item.active { background: rgba(201,168,76,0.1); color: var(--gold); }
+.nav-item-icon { font-size: 14px; width: 20px; text-align: center; }
+.nav-item-badge {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 9px;
+  background: rgba(201,168,76,0.15);
+  color: var(--gold);
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+  padding: 20px 16px 0;
+  border-top: 1px solid var(--border);
+}
+.user-info {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--surface);
+  margin-bottom: 8px;
+}
+.user-avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: rgba(201,168,76,0.2);
+  border: 1px solid rgba(201,168,76,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+}
+.user-email { font-family: var(--mono); font-size: 10px; color: var(--muted2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.btn-logout-sm {
+  width: 100%; padding: 8px;
+  background: transparent;
+  border: 1px solid rgba(255,77,77,0.2);
+  border-radius: 6px;
+  color: var(--red);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+.btn-logout-sm:hover { background: rgba(255,77,77,0.08); border-color: var(--red); }
+
+/* MAIN CONTENT */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+/* TOPBAR */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--border);
+  background: var(--dark);
+  position: sticky; top: 0; z-index: 50;
+  gap: 16px; flex-wrap: wrap;
+}
+.topbar-title { font-family: var(--sans); font-size: 18px; font-weight: 700; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.live-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 10px; color: var(--muted2);
+  padding: 5px 12px; border-radius: 4px;
+  background: var(--surface); border: 1px solid var(--border);
+}
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+.live-dot.on { background: var(--green); animation: blink 1.5s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.db-pill {
+  font-family: var(--mono); font-size: 10px;
+  padding: 5px 12px; border-radius: 4px;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--muted2); display: flex; align-items: center; gap: 6px;
+}
+.db-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+.db-pill.ok   { border-color: rgba(0,229,160,0.2); background: rgba(0,229,160,0.04); color: var(--green2); }
+.db-pill.ok .dot   { background: var(--green); }
+.db-pill.fail { border-color: rgba(255,77,77,0.2); background: rgba(255,77,77,0.04); color: var(--red); }
+.db-pill.fail .dot { background: var(--red); }
+
+/* CONTENT AREA */
+.content { padding: 28px 32px; }
+
+/* TABS */
+.tabs {
+  display: flex; gap: 2px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+.tab {
+  font-family: var(--sans); font-size: 12px; font-weight: 500;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 10px 20px;
+  border: none; background: none;
+  color: var(--muted2); cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s; margin-bottom: -1px;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* ── STATS GRID ── */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 12px; margin-bottom: 28px; }
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.stat-card:hover { border-color: var(--border2); }
+.stat-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.stat-card.gold::before  { background: var(--gold); }
+.stat-card.green::before { background: var(--green); }
+.stat-card.blue::before  { background: var(--blue); }
+.stat-card.red::before   { background: var(--red); }
+.stat-label { font-family: var(--mono); font-size: 9px; color: var(--muted2); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 10px; }
+.stat-val { font-family: var(--mono); font-size: 32px; font-weight: 700; line-height: 1; margin-bottom: 6px; }
+.stat-card.gold  .stat-val { color: var(--gold); }
+.stat-card.green .stat-val { color: var(--green); }
+.stat-card.blue  .stat-val { color: var(--blue); }
+.stat-card.red   .stat-val { color: var(--red); }
+.stat-sub { font-size: 11px; color: var(--muted2); }
+.stat-trend {
+  position: absolute; top: 16px; right: 16px;
+  font-family: var(--mono); font-size: 10px;
+  padding: 2px 7px; border-radius: 3px;
+}
+.stat-trend.up   { background: rgba(0,229,160,0.1); color: var(--green); }
+.stat-trend.down { background: rgba(255,77,77,0.1);  color: var(--red); }
+
+/* ── MINI CHARTS ── */
+.chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+}
+.chart-title { font-family: var(--mono); font-size: 10px; color: var(--muted2); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 16px; }
+.bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 80px; }
+.bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.bar {
+  width: 100%; border-radius: 3px 3px 0 0;
+  background: rgba(201,168,76,0.3);
+  transition: background 0.2s, height 0.6s ease;
+  cursor: pointer; min-height: 4px;
+}
+.bar:hover { background: var(--gold); }
+.bar-label { font-family: var(--mono); font-size: 8px; color: var(--muted); letter-spacing: 0.04em; }
+
+.donut-wrap { display: flex; align-items: center; gap: 20px; }
+.donut-chart { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
+.donut-chart svg { transform: rotate(-90deg); }
+.donut-center {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--gold);
+}
+.donut-legend { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.legend-item { display: flex; align-items: center; gap: 8px; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.legend-label { font-family: var(--mono); font-size: 10px; color: var(--muted2); flex: 1; }
+.legend-pct { font-family: var(--mono); font-size: 10px; color: var(--text); }
+
+/* ── SECTION HEADER ── */
+.section-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
+}
+.section-hdr-left { display: flex; align-items: center; gap: 12px; }
+.section-title { font-family: var(--mono); font-size: 10px; color: var(--muted2); letter-spacing: 0.15em; text-transform: uppercase; }
+.count-badge {
+  font-family: var(--mono); font-size: 10px;
+  padding: 3px 10px; border-radius: 20px;
+  background: rgba(201,168,76,0.1); color: var(--gold);
+  border: 1px solid rgba(201,168,76,0.2);
+}
+
+/* ── FILTER BAR ── */
+.filter-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.filter-input {
+  flex: 1; min-width: 200px;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 6px; padding: 9px 14px;
+  color: var(--text); font-family: var(--mono); font-size: 11px;
+  outline: none; transition: border-color 0.2s;
+}
+.filter-input::placeholder { color: var(--muted); }
+.filter-input:focus { border-color: rgba(201,168,76,0.4); }
+.filter-select {
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 6px; padding: 9px 12px;
+  color: var(--text); font-family: var(--mono); font-size: 11px;
+  outline: none; cursor: pointer;
+}
+.filter-select option { background: var(--surface2); }
+
+/* ── TABLE ── */
+.table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: auto; }
+.log-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; min-width: 800px; }
+.log-table thead th {
+  padding: 12px 16px;
+  text-align: left; color: var(--muted); font-size: 9px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  font-weight: 400; background: var(--surface2);
+  white-space: nowrap;
+}
+.log-table thead th.sortable { cursor: pointer; user-select: none; }
+.log-table thead th.sortable:hover { color: var(--gold); }
+.log-table tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; cursor: pointer; }
+.log-table tbody tr:last-child { border-bottom: none; }
+.log-table tbody tr:hover { background: var(--surface2); }
+.log-table tbody td { padding: 12px 16px; color: var(--muted2); vertical-align: middle; }
+.td-ip    { color: var(--gold) !important; font-weight: 700; }
+.td-score { font-weight: 700; }
+.td-score.high { color: var(--red) !important; }
+.td-score.med  { color: #ff9500 !important; }
+.td-score.low  { color: var(--green) !important; }
+.flag { font-size: 16px; }
+.empty-state { padding: 56px; text-align: center; color: var(--muted); font-family: var(--sans); font-size: 13px; }
+
+/* Row flash */
+@keyframes newRow { 0%{background:rgba(201,168,76,0.12)} 100%{background:transparent} }
+.row-new { animation: newRow 2s ease forwards; }
+
+/* ── DETAIL DRAWER ── */
+#detail-panel {
+  display: none;
+  background: var(--surface);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 10px;
+  padding: 28px;
+  margin-bottom: 20px;
+  animation: slideIn 0.25s ease;
+}
+@keyframes slideIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.detail-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+}
+.detail-ip {
+  font-family: var(--mono); font-size: 24px; font-weight: 700; color: var(--gold);
+}
+.detail-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.detail-tag {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em;
+  padding: 3px 10px; border-radius: 3px;
+  background: var(--surface2); color: var(--muted2); border: 1px solid var(--border);
+}
+.detail-actions { display: flex; gap: 8px; }
+.detail-btn {
+  font-family: var(--mono); font-size: 10px; padding: 7px 14px;
+  border-radius: 5px; border: 1px solid var(--border2);
+  background: transparent; color: var(--muted2); cursor: pointer; transition: all 0.2s;
+}
+.detail-btn:hover { border-color: var(--gold); color: var(--gold); }
+.detail-btn.danger:hover { border-color: var(--red); color: var(--red); }
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 8px; margin-bottom: 20px; }
+.detail-item { background: var(--surface2); border-radius: 6px; padding: 12px 16px; }
+.detail-key { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 5px; }
+.detail-val { font-family: var(--mono); font-size: 12px; color: var(--text); word-break: break-all; line-height: 1.5; }
+.map-link { font-family: var(--mono); font-size: 10px; color: var(--gold); text-decoration: none; margin-left: 6px; }
+.map-link:hover { text-decoration: underline; }
+
+/* ── EMAILS TAB ── */
+.emails-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; min-width: 400px; }
+.emails-table thead th { padding: 12px 16px; text-align: left; color: var(--muted); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; border-bottom: 1px solid var(--border); font-weight: 400; background: var(--surface2); }
+.emails-table tbody tr { border-bottom: 1px solid var(--border); }
+.emails-table tbody tr:last-child { border-bottom: none; }
+.emails-table tbody td { padding: 11px 16px; color: var(--muted2); }
+.td-email { color: var(--text) !important; }
+
+/* ── FOOTER ── */
+.action-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 0; margin-top: 12px; flex-wrap: wrap; gap: 10px;
+}
+.action-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-action {
+  font-family: var(--mono); font-size: 10px; padding: 7px 16px;
+  border-radius: 5px; border: 1px solid var(--border2);
+  background: transparent; color: var(--muted2); cursor: pointer;
+  letter-spacing: 0.06em; transition: all 0.2s;
+}
+.btn-action:hover { border-color: var(--gold); color: var(--gold); }
+.btn-danger {
+  font-family: var(--mono); font-size: 10px; padding: 7px 16px;
+  border-radius: 5px; border: 1px solid rgba(255,77,77,0.3);
+  background: transparent; color: var(--red); cursor: pointer; transition: all 0.2s;
+}
+.btn-danger:hover { background: rgba(255,77,77,0.08); border-color: var(--red); }
+.last-update { font-family: var(--mono); font-size: 10px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 999;
+  background: var(--surface); border: 1px solid rgba(201,168,76,0.3);
+  border-radius: 8px; padding: 12px 20px;
+  font-family: var(--mono); font-size: 12px; color: var(--gold);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  transform: translateY(20px); opacity: 0;
+  transition: all 0.3s ease; pointer-events: none;
+}
+#toast.show { transform: translateY(0); opacity: 1; }
+
+@media(max-width:768px) {
+  .sidebar { display: none; }
+  .content { padding: 16px; }
+  .chart-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOCK -->
+<div id="lock-screen">
+  <div class="lock-box">
+    <div class="lock-logo">REEL<em>HAUS</em></div>
+    <div class="lock-title">Admin Access</div>
+    <div class="lock-sub">Sign in with your Supabase account</div>
+    <div class="field-label">Email</div>
+    <input class="lock-input" type="email" id="lock-email" placeholder="you@email.com" onkeydown="if(event.key==='Enter')login()" />
+    <div class="field-label">Password</div>
+    <input class="lock-input" type="password" id="lock-password" placeholder="••••••••••" onkeydown="if(event.key==='Enter')login()" />
+    <button class="lock-btn" id="lock-btn" onclick="login()">Sign In</button>
+    <div class="lock-error" id="lock-error"></div>
+    <div class="lock-loading" id="lock-loading">Signing in…</div>
+    <hr class="lock-divider">
+    <div class="lock-footer">Secured by <em>Supabase Auth</em></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- MAIN APP -->
+<div class="app" id="main" style="display:none">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">REEL<em>HAUS</em><span>Admin Dashboard</span></div>
+    <div class="nav-section">
+      <div class="nav-label">Analytics</div>
+      <button class="nav-item active" onclick="switchTab('visits')">
+        <span class="nav-item-icon">📊</span> Visits
+        <span class="nav-item-badge" id="nav-visits-count">0</span>
+      </button>
+      <button class="nav-item" onclick="switchTab('emails')">
+        <span class="nav-item-icon">✉️</span> Emails
+        <span class="nav-item-badge" id="nav-emails-count">0</span>
+      </button>
+      <button class="nav-item" onclick="switchTab('geo')">
+        <span class="nav-item-icon">🌍</span> Geography
+      </button>
+      <button class="nav-item" onclick="switchTab('devices')">
+        <span class="nav-item-icon">💻</span> Devices
+      </button>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Tools</div>
+      <button class="nav-item" onclick="exportLogs()"><span class="nav-item-icon">⬇️</span> Export JSON</button>
+      <button class="nav-item" onclick="exportCSV()"><span class="nav-item-icon">📋</span> Export CSV</button>
+      <button class="nav-item" onclick="fetchLogs()"><span class="nav-item-icon">🔄</span> Refresh</button>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="user-info">
+        <div class="user-avatar">👤</div>
+        <div class="user-email" id="sidebar-email">admin</div>
+      </div>
+      <button class="btn-logout-sm" onclick="logout()">Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="page-title">Visit Analytics</div>
+      <div class="topbar-right">
+        <div class="live-badge"><div class="live-dot" id="live-dot"></div><span id="live-label">CONNECTING</span></div>
+        <div class="db-pill" id="db-pill"><div class="dot"></div><span id="db-text">Connecting…</span></div>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- VISITS TAB -->
+      <div id="tab-visits">
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card gold">
+            <div class="stat-trend up" id="s-trend">LIVE</div>
+            <div class="stat-label">Total Visits</div>
+            <div class="stat-val" id="s-total">—</div>
+            <div class="stat-sub">all time</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Unique IPs</div>
+            <div class="stat-val" id="s-unique">—</div>
+            <div class="stat-sub">distinct addresses</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-label">Countries</div>
+            <div class="stat-val" id="s-countries">—</div>
+            <div class="stat-sub">unique regions</div>
+          </div>
+          <div class="stat-card gold">
+            <div class="stat-label">Today's Visits</div>
+            <div class="stat-val" id="s-today">—</div>
+            <div class="stat-sub">since midnight</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Avg. Time</div>
+            <div class="stat-val" id="s-avg-time">—</div>
+            <div class="stat-sub">seconds on page</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-label">Last Visit</div>
+            <div class="stat-val" id="s-last" style="font-size:16px">—</div>
+            <div class="stat-sub">most recent</div>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="chart-row">
+          <div class="chart-card">
+            <div class="chart-title">// Visits by Day (last 7)</div>
+            <div class="bar-chart" id="bar-chart"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">// Browser Distribution</div>
+            <div class="donut-wrap">
+              <div class="donut-chart">
+                <svg width="80" height="80" viewBox="0 0 80 80">
+                  <circle cx="40" cy="40" r="30" fill="none" stroke="var(--surface2)" stroke-width="12"/>
+                  <circle id="donut-arc-1" cx="40" cy="40" r="30" fill="none" stroke="var(--gold)" stroke-width="12" stroke-dasharray="0 188"/>
+                  <circle id="donut-arc-2" cx="40" cy="40" r="30" fill="none" stroke="var(--blue)" stroke-width="12" stroke-dasharray="0 188" stroke-dashoffset="0"/>
+                  <circle id="donut-arc-3" cx="40" cy="40" r="30" fill="none" stroke="var(--green)" stroke-width="12" stroke-dasharray="0 188" stroke-dashoffset="0"/>
+                  <circle id="donut-arc-4" cx="40" cy="40" r="30" fill="none" stroke="var(--muted)" stroke-width="12" stroke-dasharray="0 188" stroke-dashoffset="0"/>
+                </svg>
+                <div class="donut-center" id="donut-center">—</div>
+              </div>
+              <div class="donut-legend" id="donut-legend"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detail -->
+        <div id="detail-panel">
+          <div class="detail-header">
+            <div>
+              <div class="detail-ip" id="d-ip">—</div>
+              <div class="detail-tags" id="d-tags"></div>
+            </div>
+            <div class="detail-actions">
+              <button class="detail-btn" onclick="copyDetailIP()">Copy IP</button>
+              <button class="detail-btn danger" onclick="closeDetail()">Close ✕</button>
+            </div>
+          </div>
+          <div class="detail-grid" id="d-grid"></div>
+        </div>
+
+        <!-- Table -->
+        <div class="section-hdr">
+          <div class="section-hdr-left">
+            <span class="section-title">// Visit Log</span>
+            <span class="count-badge" id="log-count">0 entries</span>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <input class="filter-input" type="text" id="filter-input" placeholder="Search IP, city, country, org…" oninput="applyFilter()" />
+          <select class="filter-select" id="filter-platform" onchange="applyFilter()">
+            <option value="">All Platforms</option>
+            <option>Windows</option><option>macOS</option><option>Linux</option><option>Android</option><option>iOS</option>
+          </select>
+          <select class="filter-select" id="filter-browser" onchange="applyFilter()">
+            <option value="">All Browsers</option>
+            <option>Chrome</option><option>Firefox</option><option>Safari</option><option>Edge</option>
+          </select>
+          <select class="filter-select" id="filter-country" onchange="applyFilter()">
+            <option value="">All Countries</option>
+          </select>
+        </div>
+        <div class="table-wrap" style="margin-bottom:16px">
+          <table class="log-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th class="sortable" onclick="sortBy('ip')">IP Address ↕</th>
+                <th class="sortable" onclick="sortBy('visited_at')">Timestamp ↕</th>
+                <th>Country</th>
+                <th>City</th>
+                <th>Browser</th>
+                <th>Platform</th>
+                <th class="sortable" onclick="sortBy('time_on_page')">Time ↕</th>
+                <th>ISP</th>
+              </tr>
+            </thead>
+            <tbody id="log-body">
+              <tr><td colspan="9"><div class="empty-state">Loading…</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="action-bar">
+          <div class="last-update"><div class="live-dot on"></div><span id="last-update-text">Polling every 10s</span></div>
+          <div class="action-btns">
+            <button class="btn-action" onclick="exportLogs()">Export JSON</button>
+            <button class="btn-action" onclick="exportCSV()">Export CSV</button>
+            <button class="btn-danger" onclick="clearLogs()">Clear All</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EMAILS TAB -->
+      <div id="tab-emails" style="display:none">
+        <div class="stats-grid">
+          <div class="stat-card gold">
+            <div class="stat-label">Total Signups</div>
+            <div class="stat-val" id="e-total">—</div>
+            <div class="stat-sub">early access list</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Today</div>
+            <div class="stat-val" id="e-today">—</div>
+            <div class="stat-sub">new signups</div>
+          </div>
+        </div>
+        <div class="section-hdr">
+          <div class="section-hdr-left">
+            <span class="section-title">// Email Signups</span>
+            <span class="count-badge" id="email-count">0</span>
+          </div>
+          <div class="action-btns">
+            <button class="btn-action" onclick="exportEmails()">Export CSV</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="emails-table">
+            <thead><tr><th>#</th><th>Email</th><th>Signed Up</th></tr></thead>
+            <tbody id="email-body"><tr><td colspan="3"><div class="empty-state">Loading…</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- GEO TAB -->
+      <div id="tab-geo" style="display:none">
+        <div class="chart-row" style="grid-template-columns:1fr">
+          <div class="chart-card">
+            <div class="chart-title">// Top Countries</div>
+            <div id="geo-bars" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
+          </div>
+        </div>
+        <div class="chart-row" style="grid-template-columns:1fr">
+          <div class="chart-card">
+            <div class="chart-title">// Top Cities</div>
+            <div id="city-bars" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEVICES TAB -->
+      <div id="tab-devices" style="display:none">
+        <div class="chart-row">
+          <div class="chart-card">
+            <div class="chart-title">// Platform Distribution</div>
+            <div id="platform-bars" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">// Browser Distribution</div>
+            <div id="browser-bars" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
+          </div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-card">
+            <div class="chart-title">// Screen Resolutions</div>
+            <div id="screen-bars" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">// Touch vs Non-Touch</div>
+            <div id="touch-bars" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL      = 'https://adxujurerxlrebawarav.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkeHVqdXJlcnhscmViYXdhcmF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNTU3MjgsImV4cCI6MjA5MjYzMTcyOH0.SeAAFJ6N1qytZDrSMj-ue4J5YU5zPfzpyujDJeHFPJ4';
+const TABLE_VISITS      = 'visits';
+const TABLE_EMAILS      = 'emails';
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let allLogs = [], allEmails = [], sortField = 'visited_at', sortAsc = false;
+let currentTab = 'visits';
+
+// ── AUTH ──────────────────────────────────────────────────────
+(async function initAuth() {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) showDashboard(session.user.email);
+  db.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT') {
+      document.getElementById('lock-screen').style.display = 'flex';
+      document.getElementById('main').style.display = 'none';
+    }
+    if (event === 'SIGNED_IN' && session) showDashboard(session.user.email);
+  });
+})();
+
+async function login() {
+  const email = document.getElementById('lock-email').value.trim();
+  const pw    = document.getElementById('lock-password').value;
+  const btn   = document.getElementById('lock-btn');
+  const errEl = document.getElementById('lock-error');
+  const lodEl = document.getElementById('lock-loading');
+  errEl.style.display = 'none';
+  if (!email || !pw) { errEl.textContent = 'Enter email and password.'; errEl.style.display = 'block'; return; }
+  btn.disabled = true; lodEl.style.display = 'block';
+  const { data, error } = await db.auth.signInWithPassword({ email, password: pw });
+  btn.disabled = false; lodEl.style.display = 'none';
+  if (error) {
+    errEl.textContent = error.message || 'Invalid credentials.';
+    errEl.style.display = 'block';
+    document.getElementById('lock-password').value = '';
+    return;
+  }
+  showDashboard(data.user.email);
+}
+
+async function logout() {
+  await db.auth.signOut();
+  document.getElementById('lock-email').value = '';
+  document.getElementById('lock-password').value = '';
+  document.getElementById('lock-screen').style.display = 'flex';
+  document.getElementById('main').style.display = 'none';
+  toast('Signed out');
+}
+
+function showDashboard(email) {
+  document.getElementById('lock-screen').style.display = 'none';
+  document.getElementById('main').style.display = 'flex';
+  document.getElementById('sidebar-email').textContent = email;
+  initDashboard();
+}
+
+// ── TABS ──────────────────────────────────────────────────────
+const TAB_TITLES = { visits: 'Visit Analytics', emails: 'Email Signups', geo: 'Geography', devices: 'Device Analytics' };
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('[id^="tab-"]').forEach(el => el.style.display = 'none');
+  document.getElementById('tab-' + tab).style.display = 'block';
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('page-title').textContent = TAB_TITLES[tab] || tab;
+  if (tab === 'emails' && allEmails.length === 0) fetchEmails();
+  if (tab === 'geo') renderGeo();
+  if (tab === 'devices') renderDevices();
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+async function initDashboard() {
+  await fetchLogs();
+  await fetchEmails();
+  startPolling();
+}
+
+// ── FETCH VISITS ──────────────────────────────────────────────
+async function fetchLogs() {
+  setDbStatus('loading', 'Fetching…');
+  try {
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/${TABLE_VISITS}?order=visited_at.desc&limit=2000`,
+      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY } }
+    );
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    allLogs = await resp.json();
+    setDbStatus('ok', `Connected · ${allLogs.length} visits`);
+    updateStats();
+    applyFilter();
+    buildCharts();
+    populateCountryFilter();
+    document.getElementById('nav-visits-count').textContent = allLogs.length;
+  } catch(err) {
+    setDbStatus('fail', 'Error: ' + err.message);
+  }
+}
+
+// ── FETCH EMAILS ──────────────────────────────────────────────
+async function fetchEmails() {
+  try {
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/${TABLE_EMAILS}?order=created_at.desc&limit=2000`,
+      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY } }
+    );
+    if (!resp.ok) return;
+    allEmails = await resp.json();
+    renderEmails();
+    document.getElementById('nav-emails-count').textContent = allEmails.length;
+  } catch(_) {}
+}
+
+function renderEmails() {
+  const today = new Date().toDateString();
+  const todayCount = allEmails.filter(e => new Date(e.created_at || e.inserted_at || Date.now()).toDateString() === today).length;
+  document.getElementById('e-total').textContent = allEmails.length;
+  document.getElementById('e-today').textContent = todayCount;
+  document.getElementById('email-count').textContent = allEmails.length + ' entries';
+  const tbody = document.getElementById('email-body');
+  if (!allEmails.length) {
+    tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state">No signups yet.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = allEmails.map((e, i) => `
+    <tr>
+      <td style="color:var(--muted)">${String(i+1).padStart(3,'0')}</td>
+      <td class="td-email">${esc(e.email)}</td>
+      <td style="color:var(--muted2)">${fmt(e.created_at || e.inserted_at)}</td>
+    </tr>
+  `).join('');
+}
+
+// ── POLLING ───────────────────────────────────────────────────
+function startPolling() {
+  const dot = document.getElementById('live-dot');
+  const label = document.getElementById('live-label');
+  dot.classList.add('on'); label.textContent = 'LIVE';
+  setInterval(async () => {
+    try {
+      const resp = await fetch(
+        `${SUPABASE_URL}/rest/v1/${TABLE_VISITS}?order=visited_at.desc&limit=2000`,
+        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY } }
+      );
+      const data = await resp.json();
+      if (data.length !== allLogs.length) {
+        const isNew = data.length > allLogs.length;
+        allLogs = data;
+        updateStats(); applyFilter(); buildCharts();
+        document.getElementById('nav-visits-count').textContent = allLogs.length;
+        if (isNew) toast('🟢 New visit detected!');
+      }
+      document.getElementById('last-update-text').textContent = 'Updated ' + new Date().toLocaleTimeString();
+    } catch(_) {}
+    try {
+      const resp2 = await fetch(
+        `${SUPABASE_URL}/rest/v1/${TABLE_EMAILS}?order=created_at.desc&limit=2000`,
+        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY } }
+      );
+      const emails = await resp2.json();
+      if (emails.length !== allEmails.length) { allEmails = emails; renderEmails(); document.getElementById('nav-emails-count').textContent = allEmails.length; }
+    } catch(_) {}
+  }, 10000);
+}
+
+// ── STATS ─────────────────────────────────────────────────────
+function updateStats() {
+  const ips = new Set(allLogs.map(l => l.ip));
+  const countries = new Set(allLogs.map(l => l.country).filter(Boolean));
+  const today = new Date().toDateString();
+  const todayVisits = allLogs.filter(l => new Date(l.visited_at).toDateString() === today).length;
+  const withTime = allLogs.filter(l => l.time_on_page);
+  const avgTime = withTime.length ? Math.round(withTime.reduce((a,b) => a + b.time_on_page, 0) / withTime.length) : null;
+  const last = allLogs[0];
+
+  document.getElementById('s-total').textContent     = allLogs.length;
+  document.getElementById('s-unique').textContent    = ips.size;
+  document.getElementById('s-countries').textContent = countries.size;
+  document.getElementById('s-today').textContent     = todayVisits;
+  document.getElementById('s-avg-time').textContent  = avgTime ? avgTime + 's' : '—';
+  document.getElementById('s-last').textContent      = last ? new Date(last.visited_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false}) : '—';
+}
+
+// ── CHARTS ────────────────────────────────────────────────────
+function buildCharts() {
+  buildBarChart();
+  buildDonut();
+}
+
+function buildBarChart() {
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toDateString();
+    const label = d.toLocaleDateString('en-US', { weekday: 'short' });
+    const count = allLogs.filter(l => new Date(l.visited_at).toDateString() === ds).length;
+    days.push({ label, count });
+  }
+  const max = Math.max(...days.map(d => d.count), 1);
+  document.getElementById('bar-chart').innerHTML = days.map(d => `
+    <div class="bar-group">
+      <div class="bar" style="height:${Math.max(4,(d.count/max)*70)}px" title="${d.count} visits"></div>
+      <div class="bar-label">${d.label}</div>
+    </div>
+  `).join('');
+}
+
+function buildDonut() {
+  const browsers = {};
+  allLogs.forEach(l => { const b = l.browser || 'Unknown'; browsers[b] = (browsers[b]||0)+1; });
+  const sorted = Object.entries(browsers).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  const total = sorted.reduce((s,[,c])=>s+c,0);
+  const colors = ['var(--gold)','var(--blue)','var(--green)','var(--muted)'];
+  const circ = 2*Math.PI*30;
+
+  let offset = 0;
+  sorted.forEach(([,count], i) => {
+    const pct = count/total;
+    const dash = pct * circ;
+    const el = document.getElementById(`donut-arc-${i+1}`);
+    if (el) { el.setAttribute('stroke-dasharray', `${dash} ${circ}`); el.setAttribute('stroke-dashoffset', -offset); }
+    offset += dash;
+  });
+  document.getElementById('donut-center').textContent = total;
+  document.getElementById('donut-legend').innerHTML = sorted.map(([name,count],i) => `
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${colors[i]}"></div>
+      <div class="legend-label">${name}</div>
+      <div class="legend-pct">${Math.round(count/total*100)}%</div>
+    </div>
+  `).join('');
+}
+
+function renderGeo() {
+  renderHBars('geo-bars', allLogs, 'country', 12, 'var(--gold)');
+  renderHBars('city-bars', allLogs, 'city', 10, 'var(--blue)');
+}
+
+function renderDevices() {
+  renderHBars('platform-bars', allLogs, 'platform', 8, 'var(--green)');
+  renderHBars('browser-bars',  allLogs, 'browser',  8, 'var(--gold)');
+  renderHBars('screen-bars',   allLogs, 'screen_res',6,'var(--blue)');
+  const touchCount = allLogs.filter(l => l.touch_screen).length;
+  const nonTouch   = allLogs.length - touchCount;
+  document.getElementById('touch-bars').innerHTML = [
+    ['Touch Screen', touchCount, 'var(--green)'],
+    ['Non-Touch', nonTouch, 'var(--muted2)'],
+  ].map(([label,count,color]) => hBar(label, count, allLogs.length, color)).join('');
+}
+
+function renderHBars(containerId, data, field, limit, color) {
+  const map = {};
+  data.forEach(l => { const v = l[field] || 'Unknown'; map[v] = (map[v]||0)+1; });
+  const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,limit);
+  const max = sorted[0]?.[1] || 1;
+  document.getElementById(containerId).innerHTML = sorted.map(([k,v]) => hBar(k, v, max, color)).join('');
+}
+
+function hBar(label, value, max, color) {
+  const pct = Math.round((value/max)*100);
+  return `
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(label)}</div>
+      <div style="flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:width .6s ease"></div>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);width:28px;text-align:right">${value}</div>
+    </div>
+  `;
+}
+
+// ── COUNTRY FILTER ────────────────────────────────────────────
+function populateCountryFilter() {
+  const countries = [...new Set(allLogs.map(l=>l.country).filter(Boolean))].sort();
+  const sel = document.getElementById('filter-country');
+  sel.innerHTML = '<option value="">All Countries</option>' + countries.map(c => `<option>${c}</option>`).join('');
+  sel.onchange = applyFilter;
+}
+
+// ── SORT + FILTER ─────────────────────────────────────────────
+function sortBy(field) {
+  if (sortField === field) sortAsc = !sortAsc;
+  else { sortField = field; sortAsc = false; }
+  applyFilter();
+}
+
+function applyFilter(highlightFirst = false) {
+  const query    = document.getElementById('filter-input').value.toLowerCase();
+  const platform = document.getElementById('filter-platform').value;
+  const browser  = document.getElementById('filter-browser').value;
+  const country  = document.getElementById('filter-country').value;
+
+  let filtered = allLogs.filter(l => {
+    const text = [l.ip,l.city,l.region,l.country,l.browser,l.platform,l.org,l.timezone].join(' ').toLowerCase();
+    return (!query || text.includes(query))
+        && (!platform || l.platform === platform)
+        && (!browser  || l.browser  === browser)
+        && (!country  || l.country  === country);
+  });
+
+  filtered.sort((a, b) => {
+    const av = a[sortField] ?? ''; const bv = b[sortField] ?? '';
+    return sortAsc ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
+  });
+
+  renderTable(filtered, highlightFirst);
+  document.getElementById('log-count').textContent = filtered.length + (filtered.length===1?' entry':' entries');
+}
+
+const COUNTRY_FLAGS = { US:'🇺🇸',GB:'🇬🇧',CA:'🇨🇦',AU:'🇦🇺',DE:'🇩🇪',FR:'🇫🇷',JP:'🇯🇵',IN:'🇮🇳',BR:'🇧🇷',MX:'🇲🇽',NL:'🇳🇱',RU:'🇷🇺',CN:'🇨🇳',KR:'🇰🇷',IT:'🇮🇹',ES:'🇪🇸',PL:'🇵🇱',SE:'🇸🇪',NO:'🇳🇴',DK:'🇩🇰',FI:'🇫🇮',SG:'🇸🇬',ZA:'🇿🇦',NG:'🇳🇬',AR:'🇦🇷',CL:'🇨🇱',CO:'🇨🇴',ID:'🇮🇩',TR:'🇹🇷',SA:'🇸🇦',AE:'🇦🇪',EG:'🇪🇬',PH:'🇵🇭',MY:'🇲🇾',TH:'🇹🇭',VN:'🇻🇳',UA:'🇺🇦',PK:'🇵🇰',BD:'🇧🇩',HK:'🇭🇰',TW:'🇹🇼',PT:'🇵🇹',GR:'🇬🇷',CZ:'🇨🇿',AT:'🇦🇹',CH:'🇨🇭',BE:'🇧🇪',RO:'🇷🇴',HU:'🇭🇺' };
+
+function renderTable(rows, highlightFirst = false) {
+  const tbody = document.getElementById('log-body');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state">No visits match your filter.</div></td></tr>'; return; }
+  tbody.innerHTML = rows.map((l, i) => {
+    const flag = COUNTRY_FLAGS[l.country] || '🌐';
+    const dur = l.time_on_page ? l.time_on_page + 's' : '—';
+    return `<tr class="${highlightFirst && i===0 ? 'row-new' : ''}" onclick="showDetail('${l.id}')">
+      <td style="color:var(--muted)">${String(i+1).padStart(3,'0')}</td>
+      <td class="td-ip">${esc(l.ip)}</td>
+      <td style="color:var(--muted2)">${fmt(l.visited_at)}</td>
+      <td><span class="flag">${flag}</span> ${esc(l.country)}</td>
+      <td style="color:var(--muted2)">${esc(l.city)}</td>
+      <td style="color:var(--muted2)">${esc(l.browser)}</td>
+      <td style="color:var(--muted2)">${esc(l.platform)}</td>
+      <td style="color:var(--muted2)">${dur}</td>
+      <td style="color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.org)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── DETAIL ────────────────────────────────────────────────────
+let currentDetailIp = null;
+function showDetail(id) {
+  const l = allLogs.find(r => String(r.id) === String(id));
+  if (!l) return;
+  currentDetailIp = l.ip;
+  document.getElementById('d-ip').textContent = l.ip || '—';
+
+  const tags = [];
+  if (l.browser)   tags.push(l.browser);
+  if (l.platform)  tags.push(l.platform);
+  if (l.country)   tags.push(l.country);
+  if (l.touch_screen) tags.push('Touch');
+  if (l.color_scheme) tags.push(l.color_scheme === 'dark' ? '🌙 Dark mode' : '☀️ Light mode');
+  document.getElementById('d-tags').innerHTML = tags.map(t => `<span class="detail-tag">${esc(t)}</span>`).join('');
+
+  const coordStr = (l.latitude && l.longitude)
+    ? `${Number(l.latitude).toFixed(4)}, ${Number(l.longitude).toFixed(4)}`
+    : '—';
+  const mapsLink = (l.latitude && l.longitude)
+    ? ` <a class="map-link" href="https://maps.google.com/?q=${l.latitude},${l.longitude}" target="_blank">↗ Map</a>`
+    : '';
+
+  const fields = [
+    ['Timestamp',   fmt(l.visited_at)],
+    ['City',        l.city],
+    ['Region',      l.region],
+    ['Country',     l.country],
+    ['ISP / Org',   l.org],
+    ['Timezone',    l.timezone],
+    ['Postal',      l.postal],
+    ['ASN',         l.asn],
+    ['Coordinates', coordStr + mapsLink],
+    ['Screen',      l.screen_res],
+    ['Language',    l.language],
+    ['Connection',  l.connection],
+    ['Battery',     l.battery_pct != null ? l.battery_pct + '%' + (l.battery_charging ? ' ⚡' : '') : null],
+    ['CPU Cores',   l.cpu_cores],
+    ['Device RAM',  l.device_memory ? l.device_memory + 'GB' : null],
+    ['Orientation', l.orientation],
+    ['Time on Page',l.time_on_page ? l.time_on_page + 's' : null],
+    ['Referrer',    l.referrer || 'Direct'],
+    ['Page URL',    l.page_url],
+    ['User Agent',  l.user_agent],
+  ];
+
+  document.getElementById('d-grid').innerHTML = fields.map(([k, v]) => `
+    <div class="detail-item">
+      <div class="detail-key">${k}</div>
+      <div class="detail-val">${k==='Coordinates' ? v : esc(v)}</div>
+    </div>
+  `).join('');
+
+  const panel = document.getElementById('detail-panel');
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeDetail() { document.getElementById('detail-panel').style.display = 'none'; }
+function copyDetailIP() {
+  if (currentDetailIp) { navigator.clipboard.writeText(currentDetailIp); toast('IP copied to clipboard'); }
+}
+
+// ── EXPORTS ───────────────────────────────────────────────────
+function exportLogs() {
+  const blob = new Blob([JSON.stringify(allLogs, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `reelhaus-visits-${today()}.json`; a.click();
+  toast('📥 JSON exported');
+}
+function exportCSV() {
+  const cols = ['id','ip','visited_at','city','region','country','org','timezone','postal','asn','latitude','longitude','browser','platform','screen_res','language','connection','battery_pct','cpu_cores','device_memory','time_on_page','referrer','page_url'];
+  const rows = allLogs.map(l => cols.map(c => { const v = String(l[c]??'').replace(/"/g,'""'); return v.includes(',') ? `"${v}"` : v; }).join(','));
+  const blob = new Blob([[cols.join(','), ...rows].join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `reelhaus-visits-${today()}.csv`; a.click();
+  toast('📥 CSV exported');
+}
+function exportEmails() {
+  const rows = allEmails.map(e => `${e.email},${e.created_at||e.inserted_at||''}`);
+  const blob = new Blob([['email,created_at',...rows].join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `reelhaus-emails-${today()}.csv`; a.click();
+  toast('📥 Emails exported');
+}
+async function clearLogs() {
+  if (!confirm('Delete ALL visit records? This cannot be undone.')) return;
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_VISITS}?id=gte.0`, {
+    method: 'DELETE',
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY }
+  });
+  if (!resp.ok) { alert('Error: HTTP ' + resp.status); return; }
+  allLogs = []; updateStats(); applyFilter(); buildCharts(); closeDetail();
+  toast('🗑 All records deleted');
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function esc(s) { return String(s??'—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmt(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'})
+    + ' ' + d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+}
+function today() { return new Date().toISOString().slice(0,10); }
+function toast(msg, dur=3000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), dur);
+}
+function setDbStatus(state, msg) {
+  const pill = document.getElementById('db-pill');
+  const text = document.getElementById('db-text');
+  pill.className = 'db-pill ' + (state==='ok' ? 'ok' : state==='fail' ? 'fail' : '');
+  text.textContent = msg;
+}
+</script>
+</body>
+</html>
