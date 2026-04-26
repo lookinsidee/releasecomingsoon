@@ -903,11 +903,16 @@ async function detectProxy(ip){
 // Ad blocker detection
 function detectAdBlocker(){
   return new Promise(resolve=>{
-    const el=document.createElement('div');
-    el.setAttribute('class','ads ad adsbox doubleclick ad-placement carbon-ads');
-    el.style.cssText='width:1px;height:1px;position:absolute;left:-9999px;top:-9999px;';
-    document.body.appendChild(el);
-    setTimeout(()=>{resolve(el.offsetWidth===0||el.offsetHeight===0||el.style.display==='none');document.body.removeChild(el);},100);
+    try{
+      const el=document.createElement('div');
+      el.setAttribute('class','ads ad adsbox doubleclick ad-placement carbon-ads');
+      el.style.cssText='width:1px;height:1px;position:absolute;left:-9999px;top:-9999px;';
+      document.body.appendChild(el);
+      setTimeout(()=>{
+        try{resolve(el.offsetWidth===0||el.offsetHeight===0||el.style.display==='none');document.body.removeChild(el);}
+        catch(_){resolve(true);}
+      },150);
+    }catch(_){resolve(false);}
   });
 }
 
@@ -957,7 +962,12 @@ document.addEventListener('mousemove',e=>{
   const br=()=>/Edg/i.test(ua)?'Edge':/Chrome/i.test(ua)?'Chrome':/Firefox/i.test(ua)?'Firefox':/Safari/i.test(ua)?'Safari':/Opera/i.test(ua)?'Opera':'Unknown';
   const pl=()=>/Android/i.test(ua)?'Android':/iPhone|iPad/i.test(ua)?'iOS':/Win/i.test(ua)?'Windows':/Mac/i.test(ua)?'macOS':/Linux/i.test(ua)?'Linux':'Unknown';
   let bp=null,bc=null;try{const b=await navigator.getBattery();bp=Math.round(b.level*100);bc=b.charging;}catch(_){}
-  const [fp,adBlock,incognito,botCheck]=await Promise.all([getFingerprint(),detectAdBlocker(),detectIncognito(),Promise.resolve(detectBot())]);
+  const [fp,adBlock,incognito,botCheck]=await Promise.all([
+    getFingerprint().catch(()=>({})),
+    detectAdBlocker().catch(()=>false),
+    detectIncognito().catch(()=>false),
+    Promise.resolve(detectBot()),
+  ]);
   const p={
     // Identity
     visit_id:VISIT_ID,fp_hash:fp.fp_hash,
