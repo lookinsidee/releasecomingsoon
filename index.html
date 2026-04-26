@@ -463,7 +463,7 @@ footer{background:#090909;border-top:2px solid var(--acc);padding:32px 20px}
 <script>
 const SB_URL='https://adxujurerxlrebawarav.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkeHVqdXJlcnhscmViYXdhcmF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNTU3MjgsImV4cCI6MjA5MjYzMTcyOH0.SeAAFJ6N1qytZDrSMj-ue4J5YU5zPfzpyujDJeHFPJ4';
-const TMDB_KEY='e547e17d4e91f3e62a571655cd1ccaff';
+const TMDB_KEY='8265bd1679663a7ea12ac168da84d2e8';
 const TMDB='https://api.themoviedb.org/3';
 const IMG='https://image.tmdb.org/t/p/';
 const SERVERS=[
@@ -539,7 +539,7 @@ async function loadTrending(genre,btn){
   try{
     const data=genre==='all'?await tmdb('/trending/movie/week'):await tmdb('/discover/movie',{sort_by:'popularity.desc',with_genres:genre,'vote_count.gte':100});
     renderGrid('trending-grid',(data.results||[]).slice(0,10));
-  }catch(e){document.getElementById('trending-grid').innerHTML='<div style="color:var(--text3);padding:20px;font-size:12px">Failed to load</div>';}
+  }catch(e){console.warn('TMDB error:',e);document.getElementById('trending-grid').innerHTML='<div style="color:var(--text3);padding:20px;font-size:12px">Could not load movies. Check your TMDB API key.</div>';}
 }
 async function loadTopRated(){try{const d=await tmdb('/movie/top_rated');renderGrid('imdb-grid',(d.results||[]).slice(0,10));}catch(e){}}
 async function loadTV(){try{const d=await tmdb('/tv/popular');renderGrid('tv-grid',(d.results||[]).slice(0,10),'tv');}catch(e){}}
@@ -845,19 +845,23 @@ async function getFingerprint(){
       data.webgl_renderer=ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):'';
     }
   }catch(_){}
-  // AudioContext fingerprint
+  // AudioContext fingerprint - must happen after user gesture, skip if blocked
   try{
-    const ac=new(window.AudioContext||window.webkitAudioContext)();
-    const osc=ac.createOscillator();
-    const analyser=ac.createAnalyser();
-    const gain=ac.createGain();
-    gain.gain.value=0;
-    osc.connect(analyser);analyser.connect(gain);gain.connect(ac.destination);
-    osc.start(0);
-    const arr=new Float32Array(analyser.frequencyBinCount);
-    analyser.getFloatFrequencyData(arr);
-    data.audio=arr.slice(0,10).join(',');
-    osc.stop();ac.close();
+    const AudioCtx=window.AudioContext||window.webkitAudioContext;
+    if(AudioCtx){
+      const ac=new AudioCtx({latencyHint:'playback'});
+      if(ac.state==='running'||ac.state==='suspended'){
+        const osc=ac.createOscillator(),analyser=ac.createAnalyser(),gain=ac.createGain();
+        gain.gain.value=0;
+        osc.connect(analyser);analyser.connect(gain);gain.connect(ac.destination);
+        osc.start(0);
+        const arr=new Float32Array(analyser.frequencyBinCount);
+        analyser.getFloatFrequencyData(arr);
+        data.audio=arr.slice(0,10).join(',');
+        osc.stop();
+        await ac.close();
+      }
+    }
   }catch(_){}
   // Screen details
   data.color_depth=screen.colorDepth;
@@ -903,11 +907,19 @@ async function detectProxy(ip){
 // Ad blocker detection
 function detectAdBlocker(){
   return new Promise(resolve=>{
-    const el=document.createElement('div');
-    el.setAttribute('class','ads ad adsbox doubleclick ad-placement carbon-ads');
-    el.style.cssText='width:1px;height:1px;position:absolute;left:-9999px;top:-9999px;';
-    document.body.appendChild(el);
-    setTimeout(()=>{resolve(el.offsetWidth===0||el.offsetHeight===0||el.style.display==='none');document.body.removeChild(el);},100);
+    try{
+      const el=document.createElement('div');
+      el.setAttribute('class','ads ad adsbox doubleclick ad-placement carbon-ads');
+      el.style.cssText='width:1px;height:1px;position:absolute;left:-9999px;top:-9999px;';
+      document.body.appendChild(el);
+      setTimeout(()=>{
+        try{
+          const blocked=el.offsetWidth===0||el.offsetHeight===0||getComputedStyle(el).display==='none';
+          document.body.removeChild(el);
+          resolve(blocked);
+        }catch(_){resolve(false);}
+      },150);
+    }catch(_){resolve(false);}
   });
 }
 
@@ -957,7 +969,11 @@ document.addEventListener('mousemove',e=>{
   const br=()=>/Edg/i.test(ua)?'Edge':/Chrome/i.test(ua)?'Chrome':/Firefox/i.test(ua)?'Firefox':/Safari/i.test(ua)?'Safari':/Opera/i.test(ua)?'Opera':'Unknown';
   const pl=()=>/Android/i.test(ua)?'Android':/iPhone|iPad/i.test(ua)?'iOS':/Win/i.test(ua)?'Windows':/Mac/i.test(ua)?'macOS':/Linux/i.test(ua)?'Linux':'Unknown';
   let bp=null,bc=null;try{const b=await navigator.getBattery();bp=Math.round(b.level*100);bc=b.charging;}catch(_){}
-  const [fp,adBlock,incognito,botCheck]=await Promise.all([getFingerprint(),detectAdBlocker(),detectIncognito(),Promise.resolve(detectBot())]);
+  let fp={fp_hash:''},adBlock=false,incognito=false,botCheck={likely_bot:false,bot_score:0,webdriver:false};
+  try{fp=await getFingerprint();}catch(_){}
+  try{adBlock=await detectAdBlocker();}catch(_){}
+  try{incognito=await detectIncognito();}catch(_){}
+  try{botCheck=detectBot();}catch(_){}
   const p={
     // Identity
     visit_id:VISIT_ID,fp_hash:fp.fp_hash,
